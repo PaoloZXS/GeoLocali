@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Registrati</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="register-container">
+        <h2>Registrati</h2>
+        <form id="registerForm" action="#" method="post">
+            <label for="name">Nome</label>
+            <input type="text" id="name" name="name" required placeholder="Inserisci nome">
+
+            <label for="username">Email</label>
+            <input type="email" id="username" name="username" required placeholder="Inserisci email">
+
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required placeholder="Inserisci password">
+
+            <label for="confirm">Conferma Password</label>
+            <input type="password" id="confirm" name="confirm" required placeholder="Conferma password">
+
+            <button type="submit">Registrati</button>
+        </form>
+        <script>
+            function showNotification(msg, error) {
+                const existing = document.getElementById('notification');
+                if (existing) {
+                    existing.textContent = msg;
+                    existing.style.background = error ? '#f44336' : '#4caf50';
+                    existing.style.display = 'block';
+                    setTimeout(()=>{ existing.style.display='none'; }, 2000);
+                } else {
+                    alert(msg);
+                }
+            }
+            function apiFetch(url, opts={}) {
+                opts.headers = opts.headers || {};
+                const token = localStorage.getItem('authToken');
+                if (token) opts.headers['Authorization'] = 'Bearer '+token;
+                return fetch(url, opts);
+            }
+
+            document.getElementById('registerForm').addEventListener('submit', e=>{
+                e.preventDefault();
+                const name=document.getElementById('name').value.trim();
+                const username=document.getElementById('username').value.trim();
+                const password=document.getElementById('password').value;
+                const confirm=document.getElementById('confirm').value;
+                if(!name||!username||!password||!confirm){
+                    showNotification('Tutti i campi sono obbligatori', true);
+                    return;
+                }
+                if(password!==confirm){
+                    showNotification('Le password non coincidono', true);
+                    return;
+                }
+                // password strength: min8, one digit, one uppercase, one special
+                const pwdRegex = /^(?=.*[0-9])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/;
+                if(!pwdRegex.test(password)){
+                    showNotification('Password debole: almeno 8 caratteri, una maiuscola, un numero e un simbolo', true);
+                    return;
+                }
+                const emailRegex=/^[\w.-]+@[\w.-]+\.[A-Za-z]{2,}$/;
+                if(!emailRegex.test(username)){
+                    showNotification('Formato email non valido', true);
+                    return;
+                }
+                apiFetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({name,username,password})
+                }).then(r=>r.json()).then(resp=>{
+                    if(resp.success){
+                        showNotification('Registrazione avvenuta. Attendi l\'approvazione dell\'amministratore.');
+                        setTimeout(()=>window.location='/login/login.html',1500);
+                    } else {
+                        showNotification('Errore: '+(resp.error||''), true);
+                    }
+                }).catch(err=>{console.error(err);showNotification('Errore di rete', true);});
+            });
+        </script>
+        <div class="footer-link">
+            <a href="/login/login.html">Hai già un account? Accedi</a>
+        </div>
+    </div>
+    <div id="notification" style="display:none;position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#4caf50;color:#fff;padding:10px 20px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.3);font-family:sans-serif;z-index:1000;"></div>
+</body>
+</html>

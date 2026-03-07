@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geolocation Example</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Rubik', sans-serif; padding: 20px; }
+        #coords { margin-top: 20px; }
+        label { display: block; margin: 5px 0; }
+        #error { color: red; }
+        /* container for map added later */
+        #mapFrame { width: 600px; height: 300px; margin-top: 20px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <!-- site header matching default page -->
+    <div class="header">
+        <h1>GEO-Locali
+            <a href="/default/default.html" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                <span style="display:inline-flex; flex-direction:column; align-items:center; gap:2px; margin-left:40px;">
+                    <span class="material-symbols-outlined back-icon" style="vertical-align:middle;">arrow_circle_left</span>
+                    <span class="back-label" style="color:#f8f7f7;">Indietro</span>
+                </span>
+            </a>
+        </h1>
+        <div id="userInfo" style="font-size:0.9em; text-align:right;"></div>
+    </div>
+    <h1>Geolocalizzazione</h1>
+    <button id="getLocationBtn">Recupera coordinate</button>
+
+    <!-- campo e pulsante per geocodifica indirizzo -->
+    <div style="margin-top:20px;">
+        <input type="text" id="addressInput" placeholder="Inserisci un indirizzo" size="40">
+        <button id="geocodeBtn">Trova coordinate da indirizzo</button>
+    </div>
+
+    <div id="coords">
+        <label>Latitudine: <span id="latitude">--</span></label>
+        <label>Longitudine: <span id="longitude">--</span></label>
+        <label>Indirizzo completo: <span id="address">--</span></label>
+        <label>Parte 1: <span id="addr1">--</span></label>
+        <label>Parte 2: <span id="addr2">--</span></label>
+        <label>Parte 3: <span id="addr3">--</span></label>
+        <button id="saveBtn" style="margin-top:10px;">Salva</button>
+    </div>
+    <p id="error"></p>
+    <div id="mapAndList" style="display:flex; align-items:flex-start; flex-wrap:wrap;">
+      <!-- iframe con mappa Google -->
+      <iframe id="mapFrame" src="" loading="lazy" allowfullscreen
+              style="flex:2; min-width:300px; height:300px; border:1px solid #ccc;"></iframe>
+      <!-- elenco indirizzi ordinati per distanza -->
+      <div id="locationList" style="flex:1; min-width:200px; margin-left:20px;">
+        <h2>Vicini</h2>
+        <ul id="locationsUl"></ul>
+      </div>
+    </div>
+    <script>
+        // helper that sets authorization header automatically
+        function apiFetch(url, opts={}) {
+            opts.headers = opts.headers || {};
+            const token = localStorage.getItem('authToken');
+            if (token) opts.headers['Authorization'] = 'Bearer '+token;
+            return fetch(url, opts);
+        }
+        // show logged-in user like other pages
+        apiFetch('/api/session')
+            .then(r => r.json())
+            .then(data => {
+                const userDiv = document.getElementById('userInfo');
+                if (data.loggedIn) {
+                    const label = data.name || data.uid;
+                    userDiv.innerHTML = `<span class="material-symbols-outlined" style="vertical-align:middle; font-size:1.2em; margin-right:4px;">man</span>${label}`;
+                }
+            })
+            .catch(err => console.error('session fetch error', err));
+        const btn = document.getElementById('getLocationBtn');
+        const geocodeBtn = document.getElementById('geocodeBtn');
+        const addressInput = document.getElementById('addressInput');
+        const latSpan = document.getElementById('latitude');
+        const lonSpan = document.getElementById('longitude');
+        const errorP = document.getElementById('error');
+        const saveBtn = document.getElementById('saveBtn');
+
+        btn.addEventListener('click', () => {
+            errorP.textContent = '';
+            // clear previous list
+            document.getElementById('locationsUl').innerHTML = '';
+
+            // Verifica se il browser supporta la geolocalizzazione
+            if (!navigator.geolocation) {
+                errorP.textContent = 'Geolocalizzazione non supportata dal browser.';
+                return;
+            }
+
+            // Richiesta di posizione
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    const { latitude, longitude } = position.coords;
+                    latSpan.textContent = latitude;
+                    lonSpan.textContent = longitude;
+
+                    // effettuare reverse geocoding con Nominatim (OpenStreetMap)
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
+                        .then(resp => resp.json())
+                        .then(data => {
+                            if (data && data.display_name) {
+                                const name = data.display_name;
+                                document.getElementById('address').textContent = name;
+                                const parts = name.split(',').map(p => p.trim());
+                                document.getElementById('addr1').textContent = parts[0] || '';
+                                document.getElementById('addr2').textContent = parts[1] || '';
+                                document.getElementById('addr3').textContent = parts[2] || '';
+                            } else {
+                                document.getElementById('address').textContent = 'Indirizzo non disponibile';
+                                document.getElementById('addr1').textContent = '';
+                                document.getElementById('addr2').textContent = '';
+                                document.getElementById('addr3').textContent = '';
+                            }
+                        })
+                        .catch(err => {
+                            document.getElementById('address').textContent = 'Errore nel recupero indirizzo';
+                            console.error('reverse geocoding error', err);
+                        });
+
+                    // aggiorna src dell'iframe Google Maps senza necessità di chiave
+                    const frame = document.getElementById('mapFrame');
+                    frame.src = `https://maps.google.com/maps?q=${latitude},${longitude}&z=15&output=embed`;
+                    // after we have current coords, fetch saved locations and compute distances
+                    updateNearbyList(latitude, longitude);
+                },
+                err => {
+                    // Gestione degli errori, incluso negazione permesso
+                    switch (err.code) {
+                        case err.PERMISSION_DENIED:
+                            errorP.textContent = 'Permesso negato per la geolocalizzazione.';
+                            break;
+                        case err.POSITION_UNAVAILABLE:
+                            errorP.textContent = 'Posizione non disponibile.';
+                            break;
+                        case err.TIMEOUT:
+                            errorP.textContent = 'Timeout nella richiesta di posizione.';
+                            break;
+                        default:
+                            errorP.textContent = 'Errore sconosciuto: ' + err.message;
+                    }
+                }
+            );
+        });
+
+        // geocodifica indirizzo -> coordinate
+        geocodeBtn.addEventListener('click', () => {
+            const addr = addressInput.value.trim();
+            if (!addr) {
+                showNotification('Inserisci prima un indirizzo', true);
+                return;
+            }
+            errorP.textContent = '';
+            document.getElementById('locationsUl').innerHTML = '';
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}`)
+                .then(r => r.json())
+                .then(results => {
+                    if (results && results.length) {
+                        const { lat, lon, display_name } = results[0];
+                        latSpan.textContent = lat;
+                        lonSpan.textContent = lon;
+                        document.getElementById('address').textContent = display_name;
+                        // split address into up to three comma-separated parts
+                        const parts = display_name.split(',').map(p => p.trim());
+                        document.getElementById('addr1').textContent = parts[0] || '';
+                        document.getElementById('addr2').textContent = parts[1] || '';
+                        document.getElementById('addr3').textContent = parts[2] || '';
+                        const frame = document.getElementById('mapFrame');
+                        frame.src = `https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed`;
+                        updateNearbyList(parseFloat(lat), parseFloat(lon));
+                    } else {
+                        showNotification('Indirizzo non trovato', true);
+                    }
+                })
+                .catch(err => {
+                    console.error('geocoding error', err);
+                    showNotification('Errore durante la ricerca dell\'indirizzo', true);
+                });
+        });
+
+        // salva i valori visualizzati nel database
+        saveBtn.addEventListener('click', () => {
+            let lat = latSpan.textContent;
+            let lon = lonSpan.textContent;
+            const fullAddr = document.getElementById('address').textContent || '';
+            if (!lat || lat === '--' || !lon || lon === '--') {
+                showNotification('Nessuna coordinata da salvare', true);
+                return;
+            }
+            // convert to numeric values if possible
+            lat = parseFloat(lat);
+            lon = parseFloat(lon);
+            // break address into parts when comma separated
+            const parts = fullAddr.split(',').map(p=>p.trim());
+            const addr = parts[0] || '';
+            const civic = parts[1] || '';
+            const city = parts[2] || '';
+            // no structure type or name available on index page, leave null
+            apiFetch('/api/save-location', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ latitude: lat, longitude: lon, address: addr, civic, city })
+            })
+            .then(r => r.json())
+            .then(resp => {
+                if (resp.success) {
+                    alert('Località salvata con id ' + resp.id);
+                } else {
+                    showNotification('Errore salvataggio: ' + (resp.error || JSON.stringify(resp)), true);
+                }
+            })
+            .catch(err => {
+                console.error('save error', err);
+                showNotification('Errore nella richiesta di salvataggio', true);
+            });
+        });
+
+        // utility: calculate distance between two coordinates (Haversine)
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371; // km
+            const toRad = d => d * Math.PI / 180;
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+                      Math.cos(toRad(lat1))*Math.cos(toRad(lat2)) *
+                      Math.sin(dLon/2)*Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function updateNearbyList(currLat, currLon) {
+            apiFetch('/api/locations')
+                .then(r => r.json())
+                .then(locations => {
+                    locations.forEach(loc => {
+                        loc.distance = haversine(currLat, currLon, parseFloat(loc.latitude), parseFloat(loc.longitude));
+                    });
+                    locations.sort((a,b)=>a.distance - b.distance);
+                    const ul = document.getElementById('locationsUl');
+                    ul.innerHTML = '';
+                    locations.forEach(loc => {
+                        const li = document.createElement('li');
+                        li.textContent = `${loc.address || 'n/a'} (${loc.distance.toFixed(2)} km)`;
+                        li.style.cursor = 'pointer';
+                        li.addEventListener('click', () => {
+                            // recenter map on this location
+                            const frame = document.getElementById('mapFrame');
+                            frame.src = `https://maps.google.com/maps?q=${loc.latitude},${loc.longitude}&z=15&output=embed`;
+                        });
+                        ul.appendChild(li);
+                    });
+                })
+                .catch(err => {
+                    console.error('error fetching locations', err);
+                });
+        }
+    </script>
+</body>
+</html>

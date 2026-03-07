@@ -13,7 +13,18 @@ console.log('environment vars', {
 
 // database client (Turso/LibSQL)
 const { createClient } = require('@libsql/client');
-const { DB_URL, DB_TOKEN } = require('./config');
+
+// load values from environment but allow a local config.js for development
+let DB_URL = process.env.DB_URL;
+let DB_TOKEN = process.env.DB_TOKEN;
+try {
+  const cfg = require('./config');
+  if (!DB_URL && cfg.DB_URL) DB_URL = cfg.DB_URL;
+  if (!DB_TOKEN && cfg.DB_TOKEN) DB_TOKEN = cfg.DB_TOKEN;
+} catch (e) {
+  // config.js not present or failed to load – that's fine in production
+  console.log('config.js not loaded; using environment variables only');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;

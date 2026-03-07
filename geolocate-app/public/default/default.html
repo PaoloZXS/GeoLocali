@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Esplora e condividi i migliori locali intorno a te con geolocalizzazione">
+    <meta name="theme-color" content="#1976D2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Locali">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <title>Default Page</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Material Symbols for icons (full set) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <style>
+        #nearbyTable tbody tr { cursor: pointer; }
+        #nearbyTable tbody tr:hover { background:#f0f0f0; }
+        #nearbyTable td { padding: 10px; border-bottom:1px solid #ccc; }
+        /* color uniforme per icone Material nel tavolo */
+        #nearbyTable .material-symbols-outlined { color: #000080; transition: transform 0.15s ease; }
+        /* allow recenter/home icon to scale on hover as well */
+        #recenterBtn .material-symbols-outlined { transition: transform 0.15s ease; }
+        #recenterBtn:hover .material-symbols-outlined { transform: scale(1.2); }
+        #nearbyTable .material-symbols-outlined:not(.type-icon):hover { transform: scale(1.2); }
+        /* styling button home: no border or background */
+        #recenterBtn { background:none; border:none; cursor:pointer; padding:0; }
+        #recenterBtn:focus { outline:none; }
+        /* ensure search button matches table icon color and has no default button chrome */
+        #searchBtn { background:none; border:none; cursor:pointer; padding:0 6px; }
+        #searchBtn .material-symbols-outlined { color:#000080; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>GEO-Locali 
+            <a id="addLink" href="/insert/insert.html" style="color:inherit; text-decoration:none;">
+            <span style="display:inline-flex; flex-direction:column; align-items:center; gap:2px; margin-left:40px;">
+                <span class="material-symbols-outlined" style="font-size:1.0em;">add_home_work</span>
+                <span style="font-size:0.3em; color:#f8f7f7; line-height:1;">Aggiungi locale</span>
+            </span>
+            </a>
+        </h1>
+        <div id="userInfo" style="margin-top:8px; font-size:0.9em;"></div>
+    </div>
+    <div class="content">
+        <div id="yourLocation" style="margin-top:20px;position:relative;">
+            <!-- search bar -->
+            <div style="margin-bottom:12px;">
+                <input type="text" id="searchInput" placeholder="Cerca nome o città" style="padding:6px 8px; width:200px;" />
+                <button id="searchBtn" style="padding:6px; display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; background:none; border:none; cursor:pointer;">
+                    <span class="material-symbols-outlined" style="font-size:2.0em; color:#000080;">search</span>
+                </button>
+            </div>
+            <h2 style="display:inline-block; color:#006400;">La tua posizione</h2><button id="recenterBtn" style="margin-left:1rem; font-size:1.2em;">
+  <span class="material-symbols-outlined" title="Posizione attuale" style="font-size:1.6em; vertical-align:middle; color:#006400;">home_pin</span>
+</button>
+            <div id="loadingOverlay" style="position:absolute;top:0;left:0;width:100%;height:100vh;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.8);z-index:9999;">
+                <div style="display:flex;flex-direction:column;align-items:center;">
+                    <div class="spinner" style="margin-bottom:10px;width:40px;height:40px;border:5px solid #ccc;border-top-color:#000080;border-radius:50%;animation:spin 1s linear infinite;"></div>
+                    <div style="font-size:1.1em; color:#333; text-align:center;">Geolocalizzazione in corso...</div>
+                </div>
+            </div>
+            <style>@keyframes spin { from {transform:rotate(0);} to {transform:rotate(360deg);} }</style>
+            <div id="yourMap" style="width:100%;height:400px; border:1px solid #ccc;"></div>
+        </div>
+        <!-- leaflet include -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <div id="nearby" style="margin-top:20px;">
+            <h2>Locali nelle vicinanze</h2>
+            <table id="nearbyTable" style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left; border-bottom:1px solid #ccc;">Denominazione locale</th>
+                        <th style="text-align:left; border-bottom:1px solid #ccc;">Giorno di chiusura</th>
+                        <th style="text-align:left; border-bottom:1px solid #ccc;">Distanza</th>
+                        <th style="text-align:center; border-bottom:1px solid #ccc; width:50px;">Map</th>
+                        <th style="text-align:center; border-bottom:1px solid #ccc; width:50px;">Edit</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+    <div id="notification" style="display:none;position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#4caf50;color:#fff;padding:10px 20px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.3);font-family:sans-serif;z-index:1000;"></div>
+    <div class="footer">
+        <p>&copy; 2026 Spectrum Italia</p>
+    </div>
+
+    <script>
+        // helper notifications
+        function showNotification(msg, error) {
+            const note = document.getElementById('notification');
+            if (!note) return alert(msg);
+            note.textContent = msg;
+            note.style.background = error ? '#f44336' : '#4caf50';
+            note.style.display = 'block';
+            setTimeout(()=>{ note.style.display='none'; }, 2000);
+        }
+        // helper that sets authorization header automatically
+        function apiFetch(url, opts={}) {
+            opts.headers = opts.headers || {};
+            const token = localStorage.getItem('authToken');
+            if (token) opts.headers['Authorization'] = 'Bearer '+token;
+            return fetch(url, opts);
+        }
+    </script>
+    <script type="module">
+        // Import offline support modules
+        import { initOfflineDetection, updatePendingSyncBadge } from './offline.js';
+        import { api } from './api-wrapper.js';
+
+        // Initialize offline detection on load
+        window.addEventListener('load', () => {
+            initOfflineDetection();
+            updatePendingSyncBadge();
+        });
+    </script>
+    <script>
+        // helper that sets authorization header automatically
+        function apiFetch(url, opts={}) {
+            opts.headers = opts.headers || {};
+            const token = localStorage.getItem('authToken');
+            if (token) opts.headers['Authorization'] = 'Bearer '+token;
+            return fetch(url, opts);
+        }
+        // fetch session info on load and display uid/name
+        apiFetch('/api/session')
+            .then(r => r.json())
+            .then(data => {
+                const userDiv = document.getElementById('userInfo');
+                if (data.loggedIn) {
+                    // show name if available, otherwise show uid
+                    const label = data.name || data.uid;
+                    let html = `<span class="material-symbols-outlined" style="vertical-align:middle; font-size:1.2em; margin-right:4px;">man</span>${label}`;
+                    if (data.admin) {
+                        // fetch pending users count
+                        apiFetch('/pending-users')
+                          .then(r => r.json())
+                          .then(pending => {
+                            const badge = pending.length > 0 ? `<span id="pendingBadge" style="position:relative;left:-12px;top:-10px;background:#d32f2f;color:white;border-radius:50%;font-size:0.7em;padding:2px 6px;min-width:18px;display:inline-block;text-align:center;">${pending.length}</span>` : '';
+                            html += `<a href="/admin" title="Area admin" style="color:inherit; text-decoration:none; margin-left:8px;position:relative;display:inline-block;">
+                                <span class="material-symbols-outlined" style="vertical-align:middle; font-size:1.2em;">admin_panel_settings</span>${badge}
+                            </a>`;
+                            userDiv.innerHTML = html;
+                          })
+                          .catch(()=>{
+                            html += `<a href="/admin" title="Area admin" style="color:inherit; text-decoration:none; margin-left:8px;">
+                                <span class="material-symbols-outlined" style="vertical-align:middle; font-size:1.2em;">admin_panel_settings</span>
+                            </a>`;
+                            userDiv.innerHTML = html;
+                          });
+                    } else {
+                        userDiv.innerHTML = html;
+                    }
+                } else {
+                    // not logged in: usually go to login unless we were redirected from insert
+                    if (sessionStorage.getItem('bypassLogin')) {
+                        // clear flag and continue without redirect
+                        sessionStorage.removeItem('bypassLogin');
+                    } else {
+                        window.location = '/';
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('error fetching session', err);
+            });
+
+        // once page loads, initialize leaflet map and position marker
+        let map, redMarker;
+        let blueMarkers = [];
+        
+        // store last known user coords for recentering/search
+        let currentLat = null, currentLon = null;
+        // coordinates used for filtering (default to current)
+        let filterLat = null, filterLon = null;
+        function clearBlueMarkers() {
+            blueMarkers.forEach(m => map.removeLayer(m));
+            blueMarkers = [];
+        }
+        function initMap(lat, lon, label) {
+            // label for popup/tooltip; default if not provided
+            const text = label || 'Tu sei qui';
+            if (!map) {
+                map = L.map('yourMap').setView([lat, lon], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+            } else {
+                map.setView([lat, lon], 13);
+            }
+            if (redMarker) {
+                map.removeLayer(redMarker);
+            }
+            clearBlueMarkers();
+            redMarker = L.marker([lat, lon], {icon: L.divIcon({className:'custom-marker',html:'<div style="background:#FF0000;width:20px;height:20px;border-radius:50%;border:3px solid #FFF"></div>',iconSize:[26,26]})})
+                .addTo(map)
+                .bindPopup(text)
+                .bindTooltip(`<div>${text}</div>`, {permanent: false, direction: 'top'});
+        }
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                const { latitude, longitude } = pos.coords;
+                // remember coords
+                currentLat = latitude;
+                currentLon = longitude;
+                filterLat = latitude;
+                filterLon = longitude;
+                initMap(latitude, longitude, 'Tu sei qui');
+                // also populate nearby list
+                updateNearbyList(latitude, longitude);
+                // hide loading overlay
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) overlay.style.display = 'none';
+                // set add link parameters so insert page can prefill them
+                const addLink = document.getElementById('addLink');
+                if (addLink) {
+                    // override click to re-acquire full location info (including reverse geocode)
+                    addLink.addEventListener('click', e => {
+                        e.preventDefault();
+                        // show loading overlay to indicate work in progress
+                        const overlay = document.getElementById('loadingOverlay');
+                        if (overlay) overlay.style.display = 'flex';
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(pos => {
+                                const lat2=pos.coords.latitude;
+                                const lon2=pos.coords.longitude;
+                                // reverse geocode via Nominatim
+                                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat2}&lon=${lon2}`)
+                                    .then(r=>r.json()).then(data=>{
+                                        const addr=data.address||{};
+                                        const params=new URLSearchParams();
+                                        params.set('lat',lat2);
+                                        params.set('lon',lon2);
+                                        if(addr.road) params.set('address',addr.road);
+                                        if(addr.house_number) params.set('civic',addr.house_number);
+                                        const city=addr.city||addr.town||addr.village;
+                                        if(city) params.set('city',city);
+                                        window.location = '/insert/insert.html?'+params.toString();
+                                    }).catch(()=>{
+                                        window.location = `/insert/insert.html?lat=${lat2}&lon=${lon2}`;
+                                    });
+                            }, err=>{
+                                // fallback to existing coords
+                                window.location = `/insert/insert.html?lat=${latitude}&lon=${longitude}`;
+                            }, {enableHighAccuracy:true});
+                        } else {
+                            window.location = `/insert/insert.html?lat=${latitude}&lon=${longitude}`;
+                        }
+                    });
+                }
+            }, err => {
+                console.error('geolocation error', err);
+            }, { enableHighAccuracy: true, maximumAge: 0 });
+        } else {
+            console.warn('Geolocation not supported');
+        }
+
+        // recenter button and clickable home icon
+        document.addEventListener('DOMContentLoaded', () => {
+            const recenter = document.getElementById('recenterBtn');
+            const homeIcon = document.getElementById('homeIcon');
+            const searchBtn = document.getElementById('searchBtn');
+            const searchInput = document.getElementById('searchInput');
+            function goHome() {
+                if (currentLat !== null && currentLon !== null) {
+                    initMap(currentLat, currentLon, 'Tu sei qui');
+                    clearBlueMarkers();
+                    filterLat = currentLat;
+                    filterLon = currentLon;
+                    updateNearbyList(filterLat, filterLon);
+                } else if (navigator.geolocation) {
+                    // fallback
+                    navigator.geolocation.getCurrentPosition(p => {
+                        const { latitude, longitude } = p.coords;
+                        initMap(latitude, longitude, 'Tu sei qui');
+                        clearBlueMarkers();
+                        filterLat = latitude;
+                        filterLon = longitude;
+                        updateNearbyList(filterLat, filterLon);
+                    }, err => console.error('geolocation error', err), { enableHighAccuracy: true, maximumAge: 0 });
+                }
+            }
+            recenter.addEventListener('click', goHome);
+            if (homeIcon) {
+                homeIcon.addEventListener('click', goHome);
+            }
+
+            // search handler
+            if (searchBtn && searchInput) {
+                // helper that checks for substring or very small typo
+                function fuzzyMatch(text, query) {
+                    text = (text||'').toLowerCase();
+                    query = (query||'').toLowerCase();
+                    if (!text || !query) return false;
+                    if (text.includes(query) || query.includes(text)) return true;
+                    // simple Levenshtein distance allowing one character difference
+                    const m = text.length, n = query.length;
+                    if (Math.abs(m - n) > 1) return false;
+                    // compute distance with early exit
+                    let dp = new Array(n+1).fill(0);
+                    for (let j=0;j<=n;j++) dp[j] = j;
+                    for (let i=1;i<=m;i++) {
+                        let prev = dp[0];
+                        dp[0] = i;
+                        let minRow = dp[0];
+                        for (let j=1;j<=n;j++) {
+                            const temp = dp[j];
+                            dp[j] = text[i-1] === query[j-1] ? prev : 1 + Math.min(prev, dp[j], dp[j-1]);
+                            prev = temp;
+                            if (dp[j] < minRow) minRow = dp[j];
+                        }
+                        if (minRow > 1) return false; // too far already
+                    }
+                    return dp[n] <= 1;
+                }
+
+                function doSearch() {
+                    const raw = searchInput.value.trim();
+                    if (!raw) return;
+                    // lowercase version used for matching
+                    const q = raw.toLowerCase();
+                    // break into words to handle multi-term queries
+                    const words = q.split(/\s+/).filter(Boolean);
+                    // fetch all locations and filter by fuzzy match on name or city
+                    apiFetch('/locations')
+                        .then(r=>r.json())
+                        .then(locs=>{
+                            const filtered = locs.filter(loc=>{
+                                // check any word matches name or city
+                                return words.some(w => fuzzyMatch(loc.name, w) || fuzzyMatch(loc.city, w));
+                            });
+                            if (!filtered.length) {
+                                showNotification('Nessun locale trovato', true);
+                                return;
+                            }
+                            // compute base coordinates by geocoding the raw query; if that
+                            // fails fall back to user's current position (if available)
+                            fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(raw)}`)
+                                .then(r2=>r2.json())
+                                .then(geo=>{
+                                    let baseLat = currentLat;
+                                    let baseLon = currentLon;
+                                    if (Array.isArray(geo) && geo.length) {
+                                        // try to pick the most appropriate result: prefer type 'city'
+                                        let best = geo.find(o=>o.type==='city' || o.place_rank>=16) || geo[0];
+                                        baseLat = parseFloat(best.lat);
+                                        baseLon = parseFloat(best.lon);
+                                    }
+                                    renderTable(filtered, baseLat, baseLon, true);
+                                }).catch(() => {
+                                    renderTable(filtered, currentLat, currentLon, true);
+                                });
+                        }).catch(err=>{
+                            console.error('error fetching locations', err);
+                            showNotification('Errore ricerca', true);
+                        });
+                }
+                searchBtn.addEventListener('click', doSearch);
+                searchInput.addEventListener('keyup', e => {
+                    if (e.key === 'Enter') doSearch();
+                });
+            }
+        });
+
+        // utility: calculate distance between two coordinates (Haversine)
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371; // km
+            const toRad = d => d * Math.PI / 180;
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+                      Math.cos(toRad(lat1))*Math.cos(toRad(lat2)) *
+                      Math.sin(dLon/2)*Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // showAllDistances: if true, compute distances but do not exclude any row
+        function renderTable(locations, currLat, currLon, showAllDistances=false) {
+            // compute distances if we have coordinates (currLat may come from search)
+            if (currLat != null && currLon != null) {
+                locations.forEach(loc => {
+                    if (loc.latitude != null && loc.longitude != null) {
+                        loc.distance = haversine(currLat, currLon, parseFloat(loc.latitude), parseFloat(loc.longitude));
+                    } else {
+                        loc.distance = null;
+                    }
+                });
+                if (!showAllDistances) {
+                    // filter out 0 km entries and those beyond 25km
+                    locations = locations.filter(loc => {
+                        if (loc.distance == null) return true; // keep if no distance
+                        if (loc.distance < 0.005) return false; // essentially same spot
+                        if (loc.distance > 25) return false;
+                        return true;
+                    });
+                }
+                locations.sort((a,b) => {
+                    if (a.distance == null) return 1;
+                    if (b.distance == null) return -1;
+                    return a.distance - b.distance;
+                });
+            }
+
+            const table = document.getElementById('nearbyTable');
+            const tbody = table.querySelector('tbody');
+            const thead = table.querySelector('thead');
+
+            // fixed header: combined info, closing day, distance, map
+            thead.innerHTML = '<tr>' +
+                             '<th style="text-align:left; border-bottom:1px solid #ccc;">Denominazione locale</th>' +
+                             '<th style="text-align:left; border-bottom:1px solid #ccc;">Giorno di chiusura</th>' +
+                             '<th style="text-align:left; border-bottom:1px solid #ccc;">Distanza</th>' +
+                             '<th style="text-align:center; border-bottom:1px solid #ccc; width:50px;">Map</th>' +
+                             '<th style="text-align:center; border-bottom:1px solid #ccc; width:50px;">Edit</th>' +
+                             '</tr>';
+
+            // clear old rows
+            tbody.innerHTML = '';
+            locations.forEach(loc => {
+                const tr = document.createElement('tr');
+                if (loc.latitude != null) tr.dataset.lat = loc.latitude;
+                if (loc.longitude != null) tr.dataset.lon = loc.longitude;
+
+                // first cell: combine name, address, civic, city
+                const infoTd = document.createElement('td');
+                // prepend icon based on type (red fork/knife for restaurant, green house for hotel)
+                if (loc.type) {
+                    const iconSpan = document.createElement('span');
+                    iconSpan.className = 'material-symbols-outlined type-icon';
+                    if (/ristorante/i.test(loc.type)) {
+                        iconSpan.textContent = 'restaurant';
+                        iconSpan.style.color = '#c00';
+                    } else if (/hotel/i.test(loc.type)) {
+                        iconSpan.textContent = 'hotel';
+                        iconSpan.style.color = '#080';
+                    }
+                    iconSpan.style.fontSize = '1.1em';
+                    iconSpan.style.verticalAlign = 'middle';
+                    iconSpan.style.marginRight = '6px';
+                    infoTd.appendChild(iconSpan);
+                }
+                const parts = [];
+                if (loc.name) parts.push(loc.name);
+                if (loc.address) parts.push(loc.address);
+                if (loc.civic) parts.push(loc.civic);
+                if (loc.city) parts.push(loc.city);
+                // use text node for the rest to keep icon separate
+                infoTd.appendChild(document.createTextNode(parts.join(' ')));
+                infoTd.style.padding = '10px';
+                tr.appendChild(infoTd);
+
+                // closing day
+                const closeTd = document.createElement('td');
+                closeTd.textContent = loc.closingDay || '';
+                closeTd.style.padding = '10px';
+                tr.appendChild(closeTd);
+
+                // distance
+                const distTd = document.createElement('td');
+                if (loc.distance != null) {
+                    distTd.textContent = loc.distance.toFixed(2) + ' km';
+                } else {
+                    distTd.textContent = '';
+                }
+                distTd.style.padding = '10px';
+                tr.appendChild(distTd);
+
+                // map icon
+                const iconTd = document.createElement('td');
+                iconTd.style.textAlign = 'center';
+                const link = document.createElement('a');
+                if (loc.latitude != null && loc.longitude != null) {
+                    link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.latitude)},${encodeURIComponent(loc.longitude)}`;
+                } else {
+                    link.href = '#';
+                }
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                const iconSpan = document.createElement('span');
+                iconSpan.className = 'material-symbols-outlined';
+                iconSpan.textContent = 'assistant_navigation';
+                iconSpan.style.cursor = 'pointer';
+                link.appendChild(iconSpan);
+                // prevent the row click behavior when map icon is clicked
+                link.addEventListener('click', e => e.stopPropagation());
+                iconTd.appendChild(link);
+                tr.appendChild(iconTd);
+
+                // edit icon
+                const editTd = document.createElement('td');
+                editTd.style.textAlign = 'center';
+                const editLink = document.createElement('a');
+                // build query params from loc object (including id)
+                const params = new URLSearchParams();
+                for (const key in loc) {
+                    if (loc[key] != null) {
+                        params.set(key, loc[key]);
+                    }
+                }
+                // also provide shorter aliases for coordinates so the insert page can fill its readonly boxes
+                if (loc.latitude != null) params.set('lat', loc.latitude);
+                if (loc.longitude != null) params.set('lon', loc.longitude);
+                editLink.href = '/insert/insert.html?' + params.toString();
+                // open in same tab to avoid accumulating windows
+                editLink.rel = 'noopener noreferrer';
+                const editSpan = document.createElement('span');
+                editSpan.className = 'material-symbols-outlined';
+                editSpan.textContent = 'edit';
+                editSpan.style.cursor = 'pointer';
+                editLink.appendChild(editSpan);
+                // prevent the row click handler from firing when clicking the edit icon
+                editLink.addEventListener('click', e => {
+                    e.stopPropagation();
+                });
+                editTd.appendChild(editLink);
+                tr.appendChild(editTd);
+
+                // click behavior
+                tr.addEventListener('click', () => {
+                    const selLat = parseFloat(tr.dataset.lat);
+                    const selLon = parseFloat(tr.dataset.lon);
+                    const address = loc.address || 'n/a';
+                    if (map && !isNaN(selLat) && !isNaN(selLon)) {
+                        const blueIcon = L.divIcon({className:'custom-marker',html:'<div style="background:#0000FF;width:20px;height:20px;border-radius:50%;border:3px solid #FFF"></div>',iconSize:[26,26]});
+                        const details = [];
+                        if (loc.name) details.push(loc.name);
+                        const addrLine = [loc.address||'', loc.civic||'', loc.city||'']
+                                                     .filter(s=>s.trim()).join(' ');
+                        if (addrLine) details.push(addrLine);
+                        const tooltipHtml = '<div>' + details.join('<br>') + '</div>';
+                        const bm = L.marker([selLat, selLon],{icon:blueIcon}).addTo(map);
+                        // try to load a photo for this locale and append to tooltip
+                        apiFetch('/api/photos?locale_id='+encodeURIComponent(loc.id))
+                            .then(r=>r.json())
+                            .then(urls=>{
+                                let html = tooltipHtml;
+                                if (Array.isArray(urls) && urls.length) {
+                                    html += `<div style="margin-top:6px;text-align:center;"><img src="${urls[0].url}" ` +
+                                            "style=\"max-width:120px;max-height:80px;object-fit:cover;display:inline-block;\"></div>";
+                                }
+                                bm.bindTooltip(html, {permanent: false, direction: 'top', className:'custom-tooltip'});
+                            }).catch(e=>{
+                                // fallback without photo
+                                bm.bindTooltip(tooltipHtml, {permanent: false, direction: 'top', className:'custom-tooltip'});
+                            });
+                        blueMarkers.push(bm);
+                        if (redMarker && !map.hasLayer(redMarker)) {
+                            redMarker.addTo(map);
+                        }
+                        // choose coordinates for zoom: prefer passed-in values
+                        // (currLat/currLon) but fall back to the global currentLat/ currentLon
+                        // which is set when the user allowed geolocation (used by search). 
+                        let baseLat = (currLat != null && currLon != null) ? currLat : currentLat;
+                        let baseLon = (currLat != null && currLon != null) ? currLon : currentLon;
+                        if (baseLat != null && baseLon != null) {
+                            try {
+                                const bounds = L.latLngBounds([[baseLat, baseLon], [selLat, selLon]]);
+                                map.fitBounds(bounds, { padding: [50, 50] });
+                            } catch (e) {
+                                map.setView([(baseLat + selLat)/2, (baseLon + selLon)/2], 13);
+                            }
+                        }
+                    }
+                });
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateNearbyList(currLat, currLon) {
+            apiFetch('/locations')
+                .then(r => r.json())
+                .then(locations => renderTable(locations, currLat, currLon))
+                .catch(err => {
+                    console.error('error fetching locations', err);
+                });
+        }
+    </script>
+    <script>
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(reg => {
+                        console.log('✓ Service Worker registered', reg);
+                        // Listen for updates
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'activated') {
+                                    console.log('✓ New Service Worker activated');
+                                    // Notify user about update
+                                    if (window.confirm('Nuova versione disponibile! Ricaricare?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(err => console.error('✗ SW registration failed:', err));
+            });
+        }
+        
+        // Background sync trigger
+        function triggerSync() {
+            if ('serviceWorker' in navigator && 'SyncManager' in window) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.sync.register('sync-queue')
+                        .then(() => console.log('✓ Background sync registered'))
+                        .catch(err => console.error('✗ Sync registration failed:', err));
+                });
+            }
+        }
+        
+        // Trigger sync on connection restore
+        window.addEventListener('online', () => {
+            console.log('✓ Back online');
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.controller?.postMessage({ type: 'SYNC_NOW' });
+            }
+            triggerSync();
+        });
+        
+        window.addEventListener('offline', () => {
+            console.log('✗ Offline');
+        });
+        
+        // Initial sync setup
+        if (navigator.onLine) {
+            triggerSync();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+/* full-height content wrapper to center tables without moving header */
+/* we avoid flex on body because header should remain at top */
+.content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: calc(100vh - 60px); /* subtract header height approx */
+    padding-top: 40px; /* nudge the whole block upward */
+    box-sizing: border-box;
+}
+
+/* Additional admin page styles (grid-based layout) */
+/* both pending and approved lists share the same grid rules */
+.user-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr 120px;
+    width: 100%;
+    max-width: 800px;
+    /* reduce vertical spacing so tables sit closer to their heading;
+       overall section spacing is handled by .dual-tables gap */
+    margin: 8px auto 0 auto;
+}
+.user-list .row { display: contents; }
+.user-list .cell {
+    padding: 8px;
+    border-bottom:1px solid #ccc;
+    display: flex;
+    align-items: center;    /* vertically center contents */
+}
+.user-list .header .cell { font-weight: bold; background:#e0e0e0; color: #0a2342; }
+.user-list .actions { text-align: center; }
+/* ensure icons/buttons in action cells are centered horizontally too */
+.user-list .cell.actions { justify-content: center; }
+.user-list button { cursor:pointer; padding:4px 6px; }
+
+/* two tables should now stack vertically rather than side-by-side */
+.dual-tables {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 60px; /* more space between the two sections */
+    /* we no longer wrap horizontally, vertical stacking is desired */
+}
+
+/* wrapper ensures both lists are the same width */
+.table-wrapper {
+    width: 100%;
+    max-width: 800px;
+}
+
+/* headings inside wrappers should sit close to table and not add top margin */
+.table-wrapper h2 {
+    margin-top: 0;
+    margin-bottom: 4px; /* minimal space to table */
+}
+/* Effetto hover per icona indietro (simile a insert page) */
+.material-symbols-outlined.indietro-hover {
+    font-size: 2em !important; /* larger size like insert buttons */
+    margin-left: 0;
+    color: #0a2342;
+    transition: transform 0.15s ease;
+    cursor: pointer;
+    display: block;
+}
+.material-symbols-outlined.indietro-hover:hover {
+    transform: scale(1.2);
+}
+
+/* back-label class for link text under an icon, matching insert page */
+.back-label {
+    margin-top: 0.2em;
+    font-size: 0.75em; /* more readable than 0.3em */
+    color: #0a2342;
+}
+
+/* spacing between icon and text in admin headers (similar to insert) */
+.content h2 .material-symbols-outlined {
+    margin-right: 20px;
+}
+
+/* bring table headers closer to their tables */
+.dual-tables .table-wrapper h2 {
+    margin-bottom: 8px;
+}
+
+/* ensure the material symbols icon font is actually applied */
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined' !important;
+    /* default variation values so the glyphs render properly */
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+}
+
+/* style action icons in user lists like insert footer icons */
+.user-list .actions button {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.user-list .actions button .material-symbols-outlined {
+    font-size: 2em;
+    transition: transform 0.15s ease;
+}
+.user-list .actions button:hover .material-symbols-outlined {
+    transform: scale(1.2);
+}
+
+/* colorize pending vs approved rows */
+#pendingContainer .row:not(.header) .cell {
+    color: red;
+}
+#approvedContainer .row:not(.header) .cell {
+    color: green;
+}
+
+/* Effetto hover per le righe delle tabelle utenti in attesa e autorizzati */
+#pendingContainer .row:not(.header):hover .cell,
+#approvedContainer .row:not(.header):hover .cell {
+    background: #e3f0ff;
+}
+
+/* heading for pending users should be red with icon */
+/* use element selector to override default .content h2 color specificity */
+h2.pending-title {
+    color: #c00;
+}
+.pending-title .material-symbols-outlined {
+    color: #c00;
+}
+
+/* heading for approved users should be green to match icon */
+h2.approved-title {
+    color: green;
+}
+.approved-title .material-symbols-outlined {
+    color: green;
+}
+
+/* style for actions in approved users list - keep same as general .user-list buttons */
+#approvedContainer .actions button {
+    background: none;
+    border: none;
+}
+/* legacy table rules removed but keep fallback in case */
+
+/* Contenitore indietro allineato a destra sotto la tabella */
+.indietro-container {
+    max-width: 800px;
+    margin: 32px auto 0 auto;
+    display: flex;
+    justify-content: flex-end;
+}
+.indietro-link {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.indietro-testo {
+    font-size: 1em;
+    color: #0a2342;
+    margin-top: 2px;
+    display: block;
+    text-align: center;
+}
+
+/* basic rule to ensure the correct font family/variations are applied */
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined' !important;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+}

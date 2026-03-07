@@ -1,0 +1,52 @@
+body {
+    font-family: 'Rubik', sans-serif;
+    background: #ffffff;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* same navy used in login/register backgrounds */
+    background: #0a2342;
+    color: white;
+    padding: 10px 20px;
+}
+.header h1 {
+    margin: 0;
+}
+#userInfo {
+    text-align: right;
+    color: white;            /* make the username white */
+    display: inline-flex;
+    align-items: center;     /* vertically center inside flex header */
+    height: 100%;
+}
+
+#yourMap {
+    width: 100%;
+    /* removed max-width so it expands fully */
+    height: 300px;
+    border: 1px solid #ccc;
+}
+
+/* heading for nearby locations uses same blue as header */
+.content h2 { color: #0b243f; }
+
+.content {
+    padding: 20px;
+    /* ensure bottom content isn't hidden behind fixed footer */
+    padding-bottom: 80px;
+}
+
+.footer {
+    background: #f1f1f1;
+    padding: 10px 20px;
+    text-align: center;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+}

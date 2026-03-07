@@ -1,0 +1,11 @@
+<svg width="192" height="192" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="192" fill="#FFFFFF"/>
+  <circle cx="96" cy="96" r="92" fill="#1976D2"/>
+  <g transform="translate(96, 72)">
+    <!-- Location pin -->
+    <path d="M 0 -32 C -17.6 -32 -32 -17.6 -32 0 C -32 24 0 56 0 56 C 0 56 32 24 32 0 C 32 -17.6 17.6 -32 0 -32 Z" 
+          fill="white" opacity="0.95"/>
+    <!-- Inner circle on pin -->
+    <circle cx="0" cy="-8" r="8" fill="#1976D2"/>
+  </g>
+</svg>

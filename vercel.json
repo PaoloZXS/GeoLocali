@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm install",
-  "outputDirectory": "",
+  "outputDirectory": "geolocate-app/public",
   "devCommand": "npm run dev",
   "env": {
     "DB_URL": "@db_url",
@@ -9,10 +9,10 @@
     "DROPBOX_APP_KEY": "@dropbox_app_key",
     "DROPBOX_APP_SECRET": "@dropbox_app_secret"
   },
-  "functions": {
-    "geolocate-app/api/[...slug].js": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 60
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
     }
-  }
+  ]
 }

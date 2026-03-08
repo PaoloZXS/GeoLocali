@@ -741,6 +741,22 @@ app.post('/upload-photo', async (req, res) => {
 // simple check endpoint
 app.get('/ping', (req, res) => res.send('pong'));
 
+// QR code generator page for easy PWA install
+// visitors can scan this from a phone to open the app URL
+app.get('/qr', (req, res) => {
+  const fullUrl = req.protocol + '://' + req.get('host') + '/';
+  const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(fullUrl);
+  res.send(`
+    <!DOCTYPE html>
+    <html><head><title>QR PWA</title></head><body style="font-family:sans-serif;text-align:center;">
+    <h1>Scan to open PWA</h1>
+    <p>Open this page on your phone and scan the code:</p>
+    <img src="${qrSrc}" alt="QR code" />
+    <p><a href="${fullUrl}">${fullUrl}</a></p>
+    </body></html>
+  `);
+});
+
 // return photo info for a given locale_id
 // changed to return array of {id,url} so the client can refer to an individual
 // photo (for deletion).  temporary links are generated in parallel as before.

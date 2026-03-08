@@ -582,10 +582,13 @@ db.execute('SELECT 1 as val')
   .catch(err => console.error('Database connection error:', err));
 
 // export utility functions so they can be used in standalone scripts
-module.exports = {
-  getDropboxAccessToken,
-  refreshDropboxToken
-};
+// (attach them to the Express app instead of replacing module.exports)
+app.getDropboxAccessToken = getDropboxAccessToken;
+app.refreshDropboxToken = refreshDropboxToken;
+
+// module.exports stays as the Express `app` defined near the top of this file
+// so other modules (including the root wrapper and the Vercel entrypoint) can
+// require() the app directly.
 
 // log any request to /save-location for debugging
 app.all('/save-location', (req, res, next) => {

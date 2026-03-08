@@ -54,14 +54,25 @@ body {
 /* responsive tweaks for phones */
 @media (max-width: 600px) {
     .header {
-        flex-direction: column;
-        align-items: flex-start;
+        /* keep row layout on phones, allow wrapping if necessary */
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
     }
     .header h1 {
         font-size: 1.4rem;
+        /* ensure h1 shrinks and does not force userInfo next line */
+        flex: 1 1 auto;
+        margin: 0;
     }
+    /* reduce left margin on links to save space */
     #addLink, #qrLink {
-        display: none;
+        margin-left: 10px;
+    }
+    /* ensure the username block stays on right edge */
+    #userInfo {
+        margin-top: 0;
+        flex: 0 0 auto;
     }
     #searchInput {
         width: 100%;

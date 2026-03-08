@@ -50,3 +50,28 @@ body {
     width: 100%;
     bottom: 0;
 }
+
+/* responsive tweaks for phones */
+@media (max-width: 600px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .header h1 {
+        font-size: 1.4rem;
+    }
+    #addLink, #qrLink {
+        display: none;
+    }
+    #searchInput {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    #yourMap {
+        height: 200px;
+    }
+    .content {
+        padding: 10px;
+        padding-bottom: 60px;
+    }
+}

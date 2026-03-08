@@ -168,6 +168,22 @@ h2.approved-title {
     text-align: center;
 }
 
+/* responsive adjustments for narrow screens */
+@media (max-width: 800px) {
+    .user-list {
+        grid-template-columns: 1fr;
+    }
+    .dual-tables {
+        gap: 30px;
+    }
+    .header h1 {
+        font-size: 1.4rem;
+    }
+    .material-symbols-outlined.indietro-hover {
+        font-size: 1.5em !important;
+    }
+}
+
 /* basic rule to ensure the correct font family/variations are applied */
 .material-symbols-outlined {
     font-family: 'Material Symbols Outlined' !important;

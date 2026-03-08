@@ -96,6 +96,37 @@
         });
     </script>
     <script>
+        // global install prompt handler
+        let deferredInstall;
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            deferredInstall = e;
+            if (!document.getElementById('installBtn')) {
+                const btn = document.createElement('button');
+                btn.id = 'installBtn';
+                btn.textContent = 'Installa app';
+                btn.style.position = 'fixed';
+                btn.style.bottom = '20px';
+                btn.style.right = '20px';
+                btn.style.padding = '10px 16px';
+                btn.style.background = '#007bff';
+                btn.style.color = '#fff';
+                btn.style.border = 'none';
+                btn.style.borderRadius = '4px';
+                btn.style.zIndex = 10000;
+                btn.onclick = async () => {
+                    if (!deferredInstall) return;
+                    deferredInstall.prompt();
+                    const choice = await deferredInstall.userChoice;
+                    console.log('install choice', choice.outcome);
+                    deferredInstall = null;
+                    btn.remove();
+                };
+                document.body.appendChild(btn);
+            }
+        });
+    </script>
+    <script>
         // helper that sets authorization header automatically
         function apiFetch(url, opts={}) {
             opts.headers = opts.headers || {};

@@ -17,8 +17,10 @@ const { createClient } = require('@libsql/client');
 // load values from environment but allow a local config.js for development
 let DB_URL = process.env.DB_URL;
 let DB_TOKEN = process.env.DB_TOKEN;
+// try to load optional config.js just once; on Vercel it will usually be absent
+let cfg = {};
 try {
-  const cfg = require('./config');
+  cfg = require('./config');
   if (!DB_URL && cfg.DB_URL) DB_URL = cfg.DB_URL;
   if (!DB_TOKEN && cfg.DB_TOKEN) DB_TOKEN = cfg.DB_TOKEN;
 } catch (e) {
@@ -124,7 +126,7 @@ async function ensureMaxImageSize(buffer) {
 
 // JWT helpers (no stateful sessions)
 function signToken(uid) {
-  const secret = process.env.JWT_SECRET || require('./config').JWT_SECRET;
+  const secret = process.env.JWT_SECRET || cfg.JWT_SECRET;
   return jwt.sign({ uid }, secret, { expiresIn: '7d' });
 }
 function verifyTokenHeader(req) {
@@ -132,7 +134,7 @@ function verifyTokenHeader(req) {
   if (!auth || !auth.startsWith('Bearer ')) return null;
   const token = auth.slice(7);
   try {
-    const secret = process.env.JWT_SECRET || require('./config').JWT_SECRET;
+    const secret = process.env.JWT_SECRET || cfg.JWT_SECRET;
     return jwt.verify(token, secret);
   } catch (e) {
     return null;
@@ -240,7 +242,7 @@ db.execute("PRAGMA table_info('tblocali')")
 async function reverseGeocode(lat, lon) {
   if (lat == null || lon == null) return null;
 
-  const cfg = require('./config');
+  // cfg variable was loaded at startup; fall back to env if absent
   const liq = process.env.LOCATIONIQ_KEY || cfg.LOCATIONIQ_KEY;
   const ocg = process.env.OPENCAGE_KEY  || cfg.OPENCAGE_KEY;
 
@@ -332,7 +334,7 @@ let dropboxAccessToken = null;
 let dropboxTokenExpiry = 0; // epoch ms
 
 async function refreshDropboxToken() {
-  const cfg = require('./config');
+  // use previously-loaded cfg object
   const key = process.env.DROPBOX_APP_KEY || cfg.DROPBOX_APP_KEY;
   const secret = process.env.DROPBOX_APP_SECRET || cfg.DROPBOX_APP_SECRET;
   const refresh = process.env.DROPBOX_REFRESH_TOKEN || cfg.DROPBOX_REFRESH_TOKEN;
@@ -367,7 +369,6 @@ async function getDropboxAccessToken() {
   }
   await refreshDropboxToken();
   // if refresh flow failed, fall back to static token
-  const cfg = require('./config');
   return process.env.DROPBOX_TOKEN || cfg.DROPBOX_TOKEN;
 }
 
@@ -403,7 +404,7 @@ checkDropboxToken();
 // approving the app you'll be redirected back to /dropbox-callback
 // which will display the JSON response containing the refresh token.
 app.get('/dropbox-auth', (req, res) => {
-  const cfg = require('./config');
+  // cfg already loaded
   const key = process.env.DROPBOX_APP_KEY || cfg.DROPBOX_APP_KEY;
   if (!key) return res.status(500).send('Dropbox app key not configured');
   const redirect = `${req.protocol}://${req.get('host')}/dropbox-callback`;
@@ -423,7 +424,6 @@ app.get('/dropbox-auth', (req, res) => {
 app.get('/dropbox-callback', async (req, res) => {
   const code = req.query.code;
   if (!code) return res.send('missing code');
-  const cfg = require('./config');
   const key = process.env.DROPBOX_APP_KEY || cfg.DROPBOX_APP_KEY;
   const secret = process.env.DROPBOX_APP_SECRET || cfg.DROPBOX_APP_SECRET;
   if (!key || !secret) return res.status(500).send('app key/secret not configured');

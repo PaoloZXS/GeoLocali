@@ -746,13 +746,23 @@ app.get('/ping', (req, res) => res.send('pong'));
 app.get('/qr', (req, res) => {
   const fullUrl = req.protocol + '://' + req.get('host') + '/';
   const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(fullUrl);
+  // simple mobile install instructions vary by platform
+  const instructions = `
+    <p style="margin-top:20px;font-size:0.9em;color:#333;">
+      Quando apri questo link sul telefono:
+      <ul style="text-align:left;display:inline-block;">
+        <li>su Android/Chrome: premi menu ⋮ e scegli "Aggiungi a schermata Home"</li>
+        <li>su iPhone/Safari: tocca <span style="font-weight:bold;">Condividi</span> e poi "Aggiungi a Home"</li>
+      </ul>
+    </p>`;
   res.send(`
     <!DOCTYPE html>
     <html><head><title>QR PWA</title></head><body style="font-family:sans-serif;text-align:center;">
     <h1>Scan to open PWA</h1>
-    <p>Open this page on your phone and scan the code:</p>
+    <p>Apri questa pagina sul telefono e scansiona il codice:</p>
     <img src="${qrSrc}" alt="QR code" />
     <p><a href="${fullUrl}">${fullUrl}</a></p>
+    ${instructions}
     </body></html>
   `);
 });

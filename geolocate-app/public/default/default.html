@@ -333,12 +333,15 @@
       }
     </script>
     <script type="module">
-      // Import offline support modules
-      import {
-        initOfflineDetection,
-        updatePendingSyncBadge
-      } from "/offline.js";
-      import { api } from "/api-wrapper.js";
+      // Import offline support modules (handles both named exports and default-exported bundles)
+      import * as OfflineModule from "/offline.js";
+      import * as ApiWrapperModule from "/api-wrapper.js";
+
+      const Offline = OfflineModule.default || OfflineModule;
+      const ApiWrapper = ApiWrapperModule.default || ApiWrapperModule;
+
+      const { initOfflineDetection, updatePendingSyncBadge } = Offline;
+      const { api } = ApiWrapper;
 
       // Initialize offline detection on load
       window.addEventListener("load", () => {

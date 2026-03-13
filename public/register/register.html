@@ -149,8 +149,10 @@
       "
     ></div>
     <script type="module">
-      // Import offline support modules
-      import { initOfflineDetection } from "/offline.js";
+      // Import offline support modules (handles both named exports and default-exported bundles)
+      import * as OfflineModule from "/offline.js";
+      const Offline = OfflineModule.default || OfflineModule;
+      const { initOfflineDetection } = Offline;
 
       // Initialize offline detection on load
       window.addEventListener("load", () => {

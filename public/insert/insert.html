@@ -871,7 +871,12 @@
                 note.textContent = window.existingId
                   ? "Locale aggiornato con successo"
                   : "Locale salvato con successo";
+                note.style.background = "#4caf50";
                 note.style.display = "block";
+                // Auto-hide notification after 2 seconds
+                setTimeout(() => {
+                  note.style.display = "none";
+                }, 2000);
                 // do not redirect automatically any more; user can upload photos now
                 sessionStorage.setItem("bypassLogin", "1");
                 // (optional) if you still want to return to list, you can click "Annulla" or navigate manually

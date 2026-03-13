@@ -814,7 +814,19 @@
                       .then((r) => r.json())
                       .then((urls) => {
                         if (Array.isArray(urls) && urls.length) {
-                          urls.forEach((u) => {
+                          const validUrls = urls
+                            .map((u) => {
+                              if (typeof u === "string") return u;
+                              if (u && typeof u === "object") return u.url;
+                              return null;
+                            })
+                            .filter(
+                              (u) =>
+                                typeof u === "string" &&
+                                u.trim() &&
+                                (u.startsWith("http") || u.startsWith("data:"))
+                            );
+                          validUrls.forEach((u) => {
                             const img = document.createElement("img");
                             img.src = u;
                             img.style.maxWidth = "120px";

@@ -464,4 +464,3 @@ export default {
   getSyncStats,
   apiFetchWithOfflineSupport
 };
-};

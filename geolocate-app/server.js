@@ -915,8 +915,9 @@ app.get(["/photos", "/api/photos"], async (req, res) => {
     return res.status(400).json({ error: "locale_id required" });
   }
   try {
+    // only return photo rows that have something to show (url or dropbox_path)
     const result = await db.execute(
-      "SELECT id, url, dropbox_path FROM tblocali_photos WHERE locale_id = ?",
+      "SELECT id, url, dropbox_path FROM tblocali_photos WHERE locale_id = ? AND ((url IS NOT NULL AND url <> '') OR (dropbox_path IS NOT NULL AND dropbox_path <> ''))",
       [localeId]
     );
     const rows = result.rows;

@@ -1,8 +1,8 @@
 // offline.js - Offline detection and UI indicators
 import db from "./db.js";
 
-const OFFLINE_JS_VERSION = "2026-03-13";
-console.log("[offline.js] version", OFFLINE_JS_VERSION);
+const OFFLINE_JS_VERSION = "f4c0524"; // build hash
+console.log("[offline.js] build", OFFLINE_JS_VERSION);
 
 let isOnline = navigator.onLine;
 let syncInProgress = false;

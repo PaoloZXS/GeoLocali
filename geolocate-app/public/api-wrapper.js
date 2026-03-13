@@ -6,8 +6,8 @@ import {
   updatePendingSyncBadge
 } from "./offline.js";
 
-const API_WRAPPER_VERSION = "2026-03-13";
-console.log("[api-wrapper.js] version", API_WRAPPER_VERSION);
+const API_WRAPPER_VERSION = "f4c0524"; // build hash
+console.log("[api-wrapper.js] build", API_WRAPPER_VERSION);
 
 const API_CACHE_DURATION = 3600000; // 1 hour
 

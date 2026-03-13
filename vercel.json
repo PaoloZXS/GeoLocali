@@ -6,5 +6,37 @@
       "source": "/api/(.*)",
       "destination": "/api/index.js"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/offline.js",
+      "destination": "/public/offline.js",
+      "permanent": true
+    },
+    {
+      "source": "/api-wrapper.js",
+      "destination": "/public/api-wrapper.js",
+      "permanent": true
+    },
+    {
+      "source": "/insert/:path*",
+      "destination": "/public/insert/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/default/:path*",
+      "destination": "/public/default/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/login/:path*",
+      "destination": "/public/login/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/register/:path*",
+      "destination": "/public/register/:path*",
+      "permanent": true
+    }
   ]
 }

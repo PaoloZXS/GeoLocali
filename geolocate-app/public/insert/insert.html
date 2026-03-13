@@ -1,787 +1,1245 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="description" content="Aggiungi una nuova posizione alla mappa">
-    <meta name="theme-color" content="#1976D2">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Locali">
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/png" href="/icons/icon-192x192.png">
-    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="Aggiungi una nuova posizione alla mappa"
+    />
+    <meta name="theme-color" content="#1976D2" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Locali" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
     <title>Inserisci Locale</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+    />
     <style>
-        /* zoom-on-hover for gallery images; bump z-index so enlarged image floats above neighbours */
-        .photo-item img {
-            transition: transform 0.2s ease;
-            will-change: transform;
-            /* ensure hover scaling uses top-right as pivot so the X remains
+      /* zoom-on-hover for gallery images; bump z-index so enlarged image floats above neighbours */
+      .photo-item img {
+        transition: transform 0.2s ease;
+        will-change: transform;
+        /* ensure hover scaling uses top-right as pivot so the X remains
                in the same corner of the enlarged image */
-            transform-origin: top right;
-        }
-        /* scale more dramatically when hovering; button will be hidden */
-        .photo-item:hover img {
-            transform: scale(2);
-        }
-        .photo-item:hover {
-            z-index: 10;
-        }
-        /* originally the delete icon was hidden on hover, but that
+        transform-origin: top right;
+      }
+      /* scale more dramatically when hovering; button will be hidden */
+      .photo-item:hover img {
+        transform: scale(2);
+      }
+      .photo-item:hover {
+        z-index: 10;
+      }
+      /* originally the delete icon was hidden on hover, but that
            made it impossible to click the "X" because it vanished when the
            cursor moved over it.  Keep the icon visible and ensure it sits on
            top of the enlarged image so it can always be clicked. */
-        .photo-item span {
-            /* default icons sit below scaled neighbors */
-            z-index: 1;
-        }
-        /* keep hovered photo's icon on top of everything */
-        .photo-item:hover span {
-            z-index: 11;
-        }
-        /* don't hide the span when hovering, the icon needs to remain usable */
-        /* apply subtle hover effect to all form buttons */
-        .footer-row button {
-            transition: background-color 0.2s, filter 0.2s;
-        }
-        .footer-row button:hover {
-            filter: brightness(0.9);
-        }
+      .photo-item span {
+        /* default icons sit below scaled neighbors */
+        z-index: 1;
+      }
+      /* keep hovered photo's icon on top of everything */
+      .photo-item:hover span {
+        z-index: 11;
+      }
+      /* don't hide the span when hovering, the icon needs to remain usable */
+      /* apply subtle hover effect to all form buttons */
+      .footer-row button {
+        transition:
+          background-color 0.2s,
+          filter 0.2s;
+      }
+      .footer-row button:hover {
+        filter: brightness(0.9);
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="header">
-        <!-- mirror default page header layout: text then separate link -->
-        <h1>GEO-Locali 
-            <a href="/default/default.html" style="color:inherit; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-                <span style="display:inline-flex; flex-direction:column; align-items:center; gap:2px; margin-left:40px;">
-                    <span class="material-symbols-outlined back-icon" style="vertical-align:middle;">arrow_circle_left</span>
-                    <span class="back-label" style="color:#f8f7f7;">Indietro</span>
-                </span>
-            </a>
-        </h1>
-        <div id="userInfo" style="font-size:0.9em; text-align:right;"></div>
+      <!-- mirror default page header layout: text then separate link -->
+      <h1>
+        GEO-Locali
+        <a
+          href="/default/default.html"
+          style="
+            color: inherit;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+          "
+        >
+          <span
+            style="
+              display: inline-flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 2px;
+              margin-left: 40px;
+            "
+          >
+            <span
+              class="material-symbols-outlined back-icon"
+              style="vertical-align: middle"
+              >arrow_circle_left</span
+            >
+            <span class="back-label" style="color: #f8f7f7">Indietro</span>
+          </span>
+        </a>
+      </h1>
+      <div id="userInfo" style="font-size: 0.9em; text-align: right"></div>
     </div>
     <div class="content">
-        <h2><span class="material-symbols-outlined" style="vertical-align:middle; margin-right:6px;">add_home</span>Inserimento nuovo locale</h2>
-        <div id="cardsWrapper" style="display:flex;gap:24px;">
-        <div class="form-container" style="flex:2;">
-            <div class="field">
-                <label>Longitudine</label>
-                <div class="input-box readonly-box" id="lonBox">NON MODIFICABILE</div>
+      <h2>
+        <span
+          class="material-symbols-outlined"
+          style="vertical-align: middle; margin-right: 6px"
+          >add_home</span
+        >Inserimento nuovo locale
+      </h2>
+      <div id="cardsWrapper" style="display: flex; gap: 24px">
+        <div class="form-container" style="flex: 2">
+          <div class="field">
+            <label>Longitudine</label>
+            <div class="input-box readonly-box" id="lonBox">
+              NON MODIFICABILE
             </div>
-            <div class="field">
-                <label>Latitudine</label>
-                <div class="input-box readonly-box" id="latBox">NON MODIFICABILE</div>
+          </div>
+          <div class="field">
+            <label>Latitudine</label>
+            <div class="input-box readonly-box" id="latBox">
+              NON MODIFICABILE
             </div>
-            <div class="field" style="margin-top:4px;">
-                <button id="clearCoordsBtn" style="padding:4px 8px;font-size:0.9em;background:#4caf50;color:#fff;border:none;border-radius:4px;cursor:pointer;">Cancella coordinate</button>
-            </div>
-            <div class="field">
-                <label>Tipo Struttura</label>
-                <select id="structureType" class="text-input">
-                    <option value="" selected>Scegli tipo struttura</option>
-                    <option value="ristorante">Ristorante</option>
-                    <option value="hotel">Hotel</option>
-                </select>
-            </div>
-            <div class="field">
-                <label>Nome</label>
-                <input type="text" id="nameInput" class="text-input" placeholder="Inserisci nome" />
-            </div>
-            <div class="field">
-                <label>Indirizzo</label>
-                <input type="text" id="addressInput" class="text-input" placeholder="Inserisci indirizzo" />
-            </div>
-            <div class="field">
-                <label>Numero civico</label>
-                <input type="text" id="civicInput" class="text-input" placeholder="Inserisci numero civico" />
-            </div>
-            <div class="field">
-                <label>Città</label>
-                <input type="text" id="cityInput" class="text-input" placeholder="Inserisci città" />
-            </div>
-            <div class="field">
-                <label>Giorno di chiusura</label>
-                <select id="closingDay" class="text-input">
-                    <option value="">-- Seleziona giorno --</option>
-                    <option value="lunedì">Lunedì</option>
-                    <option value="martedì">Martedì</option>
-                    <option value="mercoledì">Mercoledì</option>
-                    <option value="giovedì">Giovedì</option>
-                    <option value="venerdì">Venerdì</option>
-                    <option value="sabato">Sabato</option>
-                    <option value="domenica">Domenica</option>
-                </select>
-            </div>
-            <div class="footer-row" style="gap:16px;">
-                <button id="saveBtn" title="Salva" style="background:none;border:none;cursor:pointer;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-                    <span class="material-symbols-outlined" style="font-size:2em;color:#007bff;">save</span>
-                    <span style="font-size:0.75em;margin-top:4px;color:#007bff;">Salva locale</span>
-                </button>
-                <button id="uploadBtn" title="Carica foto" style="background:none;border:none;cursor:pointer;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-                    <span class="material-symbols-outlined" style="font-size:2em;color:#ff9800;">file_upload</span>
-                    <span style="font-size:0.75em;margin-top:4px;color:#ff9800;">Carica foto</span>
-                </button>
-                <button id="deleteBtn" title="Elimina" style="background:none;border:none;cursor:pointer;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;visibility:hidden;">
-                    <span class="material-symbols-outlined" style="font-size:2em;color:#f44336;">delete</span>
-                    <span style="font-size:0.75em;margin-top:4px;color:#f44336;">Elimina locale</span>
-                </button>
-                <button id="cancelBtn" title="Indietro" style="background:none;border:none;cursor:pointer;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-                    <span class="material-symbols-outlined" style="font-size:2em;color:#888;">arrow_back</span>
-                    <span style="font-size:0.75em;margin-top:4px;color:#888;">Indietro</span>
-                </button>
-            </div>
-            <!-- upload progress bar -->
-            <div id="uploadProgress" style="display:none;width:100%;background:#eee;height:6px;margin-top:10px;">
-                <div id="uploadProgressBar" style="width:0%;height:100%;background:#1976d2;"></div>
-            </div>
+          </div>
+          <div class="field" style="margin-top: 4px">
+            <button
+              id="clearCoordsBtn"
+              style="
+                padding: 4px 8px;
+                font-size: 0.9em;
+                background: #4caf50;
+                color: #fff;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+              "
+            >
+              Cancella coordinate
+            </button>
+          </div>
+          <div class="field">
+            <label>Tipo Struttura</label>
+            <select id="structureType" class="text-input">
+              <option value="" selected>Scegli tipo struttura</option>
+              <option value="ristorante">Ristorante</option>
+              <option value="hotel">Hotel</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Nome</label>
+            <input
+              type="text"
+              id="nameInput"
+              class="text-input"
+              placeholder="Inserisci nome"
+            />
+          </div>
+          <div class="field">
+            <label>Indirizzo</label>
+            <input
+              type="text"
+              id="addressInput"
+              class="text-input"
+              placeholder="Inserisci indirizzo"
+            />
+          </div>
+          <div class="field">
+            <label>Numero civico</label>
+            <input
+              type="text"
+              id="civicInput"
+              class="text-input"
+              placeholder="Inserisci numero civico"
+            />
+          </div>
+          <div class="field">
+            <label>Città</label>
+            <input
+              type="text"
+              id="cityInput"
+              class="text-input"
+              placeholder="Inserisci città"
+            />
+          </div>
+          <div class="field">
+            <label>Giorno di chiusura</label>
+            <select id="closingDay" class="text-input">
+              <option value="">-- Seleziona giorno --</option>
+              <option value="lunedì">Lunedì</option>
+              <option value="martedì">Martedì</option>
+              <option value="mercoledì">Mercoledì</option>
+              <option value="giovedì">Giovedì</option>
+              <option value="venerdì">Venerdì</option>
+              <option value="sabato">Sabato</option>
+              <option value="domenica">Domenica</option>
+            </select>
+          </div>
+          <div class="footer-row" style="gap: 16px">
+            <button
+              id="saveBtn"
+              title="Salva"
+              style="
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <span
+                class="material-symbols-outlined"
+                style="font-size: 2em; color: #007bff"
+                >save</span
+              >
+              <span style="font-size: 0.75em; margin-top: 4px; color: #007bff"
+                >Salva locale</span
+              >
+            </button>
+            <button
+              id="uploadBtn"
+              title="Carica foto"
+              style="
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <span
+                class="material-symbols-outlined"
+                style="font-size: 2em; color: #ff9800"
+                >file_upload</span
+              >
+              <span style="font-size: 0.75em; margin-top: 4px; color: #ff9800"
+                >Carica foto</span
+              >
+            </button>
+            <button
+              id="deleteBtn"
+              title="Elimina"
+              style="
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                visibility: hidden;
+              "
+            >
+              <span
+                class="material-symbols-outlined"
+                style="font-size: 2em; color: #f44336"
+                >delete</span
+              >
+              <span style="font-size: 0.75em; margin-top: 4px; color: #f44336"
+                >Elimina locale</span
+              >
+            </button>
+            <button
+              id="cancelBtn"
+              title="Indietro"
+              style="
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <span
+                class="material-symbols-outlined"
+                style="font-size: 2em; color: #888"
+                >arrow_back</span
+              >
+              <span style="font-size: 0.75em; margin-top: 4px; color: #888"
+                >Indietro</span
+              >
+            </button>
+          </div>
+          <!-- upload progress bar -->
+          <div
+            id="uploadProgress"
+            style="
+              display: none;
+              width: 100%;
+              background: #eee;
+              height: 6px;
+              margin-top: 10px;
+            "
+          >
+            <div
+              id="uploadProgressBar"
+              style="width: 0%; height: 100%; background: #1976d2"
+            ></div>
+          </div>
         </div>
         <!-- gallery card to right of form -->
-        <div id="galleryCard" style="flex:0 0 360px; display:none; border:1px solid #ccc; padding:12px; border-radius:6px;">
-            <h3>Galleria</h3>
-            <div id="galleryContainer" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
+        <div
+          id="galleryCard"
+          style="
+            flex: 0 0 360px;
+            display: none;
+            border: 1px solid #ccc;
+            padding: 12px;
+            border-radius: 6px;
+          "
+        >
+          <h3>Galleria</h3>
+          <div
+            id="galleryContainer"
+            style="
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 10px;
+            "
+          ></div>
         </div>
+      </div>
+      <!-- notification container -->
+      <div
+        id="notification"
+        style="
+          display: none;
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #4caf50;
+          color: #fff;
+          padding: 10px 20px;
+          border-radius: 4px;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+          font-family: sans-serif;
+          z-index: 1000;
+        "
+      ></div>
+      <!-- custom confirmation dialog for location deletion -->
+      <div
+        id="confirmDialog"
+        style="
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          align-items: center;
+          justify-content: center;
+          z-index: 1001;
+        "
+      >
+        <div
+          style="
+            background: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            max-width: 300px;
+            text-align: center;
+          "
+        >
+          <p id="confirmDialogMessage" style="margin-bottom: 20px">
+            Sei sicuro di voler cancellare questo locale?
+          </p>
+          <button
+            id="confirmYes"
+            style="
+              margin-right: 10px;
+              padding: 6px 12px;
+              background: #f44336;
+              color: #fff;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+            "
+          >
+            Sì
+          </button>
+          <button
+            id="confirmNo"
+            style="
+              padding: 6px 12px;
+              background: #ccc;
+              color: #000;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+            "
+          >
+            No
+          </button>
         </div>
-        <!-- notification container -->
-        <div id="notification" style="display:none;position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#4caf50;color:#fff;padding:10px 20px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.3);font-family:sans-serif;z-index:1000;"></div>
-        <!-- custom confirmation dialog for location deletion -->
-        <div id="confirmDialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1001;">
-            <div style="background:#fff;padding:20px;border-radius:6px;max-width:300px;text-align:center;">
-                <p id="confirmDialogMessage" style="margin-bottom:20px;">Sei sicuro di voler cancellare questo locale?</p>
-                <button id="confirmYes" style="margin-right:10px;padding:6px 12px;background:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;">Sì</button>
-                <button id="confirmNo" style="padding:6px 12px;background:#ccc;color:#000;border:none;border-radius:4px;cursor:pointer;">No</button>
-            </div>
+      </div>
+      <!-- custom confirmation dialog for photo deletion -->
+      <div
+        id="photoConfirmDialog"
+        style="
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          align-items: center;
+          justify-content: center;
+          z-index: 1001;
+        "
+      >
+        <div
+          style="
+            background: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            max-width: 300px;
+            text-align: center;
+          "
+        >
+          <p style="margin-bottom: 20px">Eliminare questa foto?</p>
+          <button
+            id="photoConfirmYes"
+            style="
+              margin-right: 10px;
+              padding: 6px 12px;
+              background: #f44336;
+              color: #fff;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+            "
+          >
+            Sì
+          </button>
+          <button
+            id="photoConfirmNo"
+            style="
+              padding: 6px 12px;
+              background: #ccc;
+              color: #000;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+            "
+          >
+            No
+          </button>
         </div>
-        <!-- custom confirmation dialog for photo deletion -->
-        <div id="photoConfirmDialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:1001;">
-            <div style="background:#fff;padding:20px;border-radius:6px;max-width:300px;text-align:center;">
-                <p style="margin-bottom:20px;">Eliminare questa foto?</p>
-                <button id="photoConfirmYes" style="margin-right:10px;padding:6px 12px;background:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;">Sì</button>
-                <button id="photoConfirmNo" style="padding:6px 12px;background:#ccc;color:#000;border:none;border-radius:4px;cursor:pointer;">No</button>
-            </div>
-        </div>
+      </div>
     </div>
     <div class="footer">
-        <p>&copy; 2026 Spectrum Italia</p>
+      <p>&copy; 2026 Spectrum Italia</p>
     </div>
     <script>
-        // global helpers used throughout script
-        function showPhotoConfirm(onYes) {
-            const dlg = document.getElementById('photoConfirmDialog');
-            const yesBtn = document.getElementById('photoConfirmYes');
-            const noBtn  = document.getElementById('photoConfirmNo');
-            if (!dlg || !yesBtn || !noBtn) {
-                if (window.confirm('Eliminare questa foto?')) onYes();
-                return;
-            }
-            dlg.style.display = 'flex';
-            const cleanup = () => {
-                dlg.style.display = 'none';
-                yesBtn.removeEventListener('click', yesHandler);
-                noBtn.removeEventListener('click', noHandler);
-            };
-            const yesHandler = () => { cleanup(); onYes(); };
-            const noHandler  = () => { cleanup(); };
-            yesBtn.addEventListener('click', yesHandler);
-            noBtn.addEventListener('click', noHandler);
+      // global helpers used throughout script
+      function showPhotoConfirm(onYes) {
+        const dlg = document.getElementById("photoConfirmDialog");
+        const yesBtn = document.getElementById("photoConfirmYes");
+        const noBtn = document.getElementById("photoConfirmNo");
+        if (!dlg || !yesBtn || !noBtn) {
+          if (window.confirm("Eliminare questa foto?")) onYes();
+          return;
         }
-        // fetch session info on load and display uid/name similar to default page
-        // ensure header user info is styled the same way as default.css
-        const uiStyle = document.createElement('style');
-        uiStyle.textContent = `#userInfo { text-align:right; color:white; display:inline-flex; align-items:center; height:100%; }`;
-        document.head.appendChild(uiStyle);
-        // helper that sets authorization header automatically
-        function apiFetch(url, opts={}) {
-            opts.headers = opts.headers || {};
-            const token = localStorage.getItem('authToken');
-            if (token) opts.headers['Authorization'] = 'Bearer '+token;
-            return fetch(url, opts);
-        }
+        dlg.style.display = "flex";
+        const cleanup = () => {
+          dlg.style.display = "none";
+          yesBtn.removeEventListener("click", yesHandler);
+          noBtn.removeEventListener("click", noHandler);
+        };
+        const yesHandler = () => {
+          cleanup();
+          onYes();
+        };
+        const noHandler = () => {
+          cleanup();
+        };
+        yesBtn.addEventListener("click", yesHandler);
+        noBtn.addEventListener("click", noHandler);
+      }
+      // fetch session info on load and display uid/name similar to default page
+      // ensure header user info is styled the same way as default.css
+      const uiStyle = document.createElement("style");
+      uiStyle.textContent = `#userInfo { text-align:right; color:white; display:inline-flex; align-items:center; height:100%; }`;
+      document.head.appendChild(uiStyle);
+      // helper that sets authorization header automatically
+      function apiFetch(url, opts = {}) {
+        opts.headers = opts.headers || {};
+        const token = localStorage.getItem("authToken");
+        if (token) opts.headers["Authorization"] = "Bearer " + token;
+        return fetch(url, opts);
+      }
     </script>
     <script type="module">
-        // Import offline support modules
-        import { initOfflineDetection, updatePendingSyncBadge } from './offline.js';
+      // Import offline support modules
+      import {
+        initOfflineDetection,
+        updatePendingSyncBadge
+      } from "./offline.js";
 
-        // Initialize offline detection on load
-        window.addEventListener('load', () => {
-            initOfflineDetection();
-            updatePendingSyncBadge();
-        });
+      // Initialize offline detection on load
+      window.addEventListener("load", () => {
+        initOfflineDetection();
+        updatePendingSyncBadge();
+      });
     </script>
     <script>
-        // helper that sets authorization header automatically
-        function apiFetch(url, opts={}) {
-            opts.headers = opts.headers || {};
-            const token = localStorage.getItem('authToken');
-            if (token) opts.headers['Authorization'] = 'Bearer '+token;
-            return fetch(url, opts);
+      // helper that sets authorization header automatically
+      function apiFetch(url, opts = {}) {
+        opts.headers = opts.headers || {};
+        const token = localStorage.getItem("authToken");
+        if (token) opts.headers["Authorization"] = "Bearer " + token;
+        return fetch(url, opts);
+      }
+      apiFetch("/api/session")
+        .then((r) => r.json())
+        .then((data) => {
+          const userDiv = document.getElementById("userInfo");
+          if (data.loggedIn) {
+            const label = data.name || data.uid;
+            let html = `<span class="material-symbols-outlined" style="vertical-align:middle; font-size:1.2em; margin-right:4px;">man</span>${label}`;
+            if (data.admin) {
+              html += ` <a href="/admin" title="Area admin" style="color:inherit; text-decoration:none; margin-left:8px;"><span class="material-symbols-outlined" style="vertical-align:middle; font-size:1.2em;">admin_panel_settings</span></a>`;
+            }
+            userDiv.innerHTML = html;
+          } else {
+            if (sessionStorage.getItem("bypassLogin")) {
+              sessionStorage.removeItem("bypassLogin");
+            } else {
+              window.location = "/";
+            }
+          }
+        })
+        .catch((err) => {
+          console.error("error fetching session", err);
+        });
+
+      function showNotification(msg, error) {
+        const note = document.getElementById("notification");
+        if (!note) return alert(msg);
+        note.textContent = msg;
+        note.style.background = error ? "#f44336" : "#4caf50";
+        note.style.display = "block";
+        setTimeout(() => {
+          note.style.display = "none";
+        }, 2000);
+      }
+      // helper to append a photo thumbnail/pseudo-grid item
+      function appendPhotoToGallery(obj) {
+        const idVal = obj && obj.id ? obj.id : null;
+        // ensure we only use valid URLs; ignore blank/malformed values
+        let urlVal = null;
+        if (obj && typeof obj === "object") {
+          if (typeof obj.url === "string") urlVal = obj.url;
+        } else if (typeof obj === "string") {
+          urlVal = obj;
         }
-        apiFetch('/api/session')
-            .then(r => r.json())
-            .then(data => {
-                const userDiv = document.getElementById('userInfo');
-                if (data.loggedIn) {
-                    const label = data.name || data.uid;
-                    let html = `<span class="material-symbols-outlined" style="vertical-align:middle; font-size:1.2em; margin-right:4px;">man</span>${label}`;
-                    if (data.admin) {
-                        html += ` <a href="/admin" title="Area admin" style="color:inherit; text-decoration:none; margin-left:8px;"><span class="material-symbols-outlined" style="vertical-align:middle; font-size:1.2em;">admin_panel_settings</span></a>`;
+        if (!urlVal || typeof urlVal !== "string") {
+          console.warn("Skipping invalid photo value:", obj);
+          return;
+        }
+        const trimmedUrl = urlVal.trim();
+        if (!trimmedUrl) {
+          console.warn("Skipping empty photo URL", urlVal);
+          return;
+        }
+        // only allow typical URL/data URI patterns
+        if (
+          !(trimmedUrl.startsWith("http") || trimmedUrl.startsWith("data:"))
+        ) {
+          console.warn("Skipping non-URL photo value:", trimmedUrl);
+          return;
+        }
+
+        const galleryContainer = document.getElementById("galleryContainer");
+        if (!galleryContainer) return;
+        const wrapper = document.createElement("div");
+        wrapper.className = "photo-item";
+        wrapper.style.position = "relative";
+        wrapper.style.width = "100%";
+
+        const img = document.createElement("img");
+        img.src = trimmedUrl;
+        img.style.width = "100%";
+        img.style.height = "auto";
+        img.style.objectFit = "cover";
+        img.style.border = "1px solid #ccc";
+        wrapper.appendChild(img);
+
+        if (idVal) {
+          const btn = document.createElement("span");
+          btn.textContent = "✖";
+          btn.style.position = "absolute";
+          btn.style.top = "2px";
+          btn.style.right = "4px";
+          btn.style.cursor = "pointer";
+          btn.style.background = "rgba(255,255,255,0.7)";
+          btn.style.borderRadius = "50%";
+          btn.style.padding = "2px 4px";
+          btn.title = "Rimuovi immagine";
+          btn.addEventListener("click", () => {
+            showPhotoConfirm(() => {
+              apiFetch("/api/delete-photo", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ photo_id: idVal })
+              })
+                .then((r) => r.json())
+                .then((resp) => {
+                  if (resp.success) {
+                    wrapper.remove();
+                    showNotification("Foto eliminata", false);
+                  } else {
+                    showNotification("Errore cancellazione", true);
+                  }
+                })
+                .catch((e) => {
+                  console.error("delete-photo error", e);
+                  showNotification("Errore di rete", true);
+                });
+            });
+          });
+          wrapper.appendChild(btn);
+        }
+
+        galleryContainer.appendChild(wrapper);
+      }
+
+      // fill readonly coordinates if provided via query string and support edit mode
+      (function () {
+        const params = new URLSearchParams(window.location.search);
+        // support both short and long parameter names for coordinates
+        const lat = params.get("lat") || params.get("latitude");
+        const lon = params.get("lon") || params.get("longitude");
+        const address = params.get("address");
+        const civic = params.get("civic");
+        const city = params.get("city");
+        const name = params.get("name");
+        const type = params.get("type");
+        const closeDay = params.get("closingDay");
+        const id = params.get("id");
+
+        // store id on window for save handler
+        if (id) {
+          window.existingId = id;
+          // change heading
+          const h2 = document.querySelector("h2");
+          if (h2) h2.textContent = "✏️ Modifica locale";
+          // show delete button (keep flex display)
+          const del = document.getElementById("deleteBtn");
+          if (del) {
+            del.style.visibility = "visible";
+            del.style.display = "flex";
+          }
+
+          // load gallery images
+          const galleryCard = document.getElementById("galleryCard");
+          const galleryContainer = document.getElementById("galleryContainer");
+          console.log(
+            "insert page edit mode, id=",
+            id,
+            "galleryCard=",
+            galleryCard,
+            "galleryContainer=",
+            galleryContainer
+          );
+          if (galleryCard && galleryContainer) {
+            // always show the gallery card, will fill if there are URLs
+            galleryCard.style.display = "block";
+            const loader = document.createElement("div");
+            loader.id = "galleryLoading";
+            loader.textContent = "Caricamento immagini…";
+            loader.style.padding = "8px";
+            loader.style.fontStyle = "italic";
+            galleryContainer.appendChild(loader);
+
+            apiFetch("/api/photos?locale_id=" + encodeURIComponent(id))
+              .then((r) => r.json())
+              .then((urls) => {
+                // remove loader
+                if (loader && loader.parentNode)
+                  loader.parentNode.removeChild(loader);
+                if (Array.isArray(urls) && urls.length) {
+                  urls.forEach((u) => appendPhotoToGallery(u));
+                }
+              })
+              .catch((e) => {
+                console.error("failed loading gallery", e);
+                if (loader && loader.parentNode)
+                  loader.parentNode.removeChild(loader);
+              });
+          }
+        }
+
+        if (lon !== null) {
+          const boxes = document.querySelectorAll(".input-box");
+          if (boxes[0]) boxes[0].textContent = lon;
+        }
+        if (lat !== null) {
+          const boxes = document.querySelectorAll(".input-box");
+          if (boxes[1]) boxes[1].textContent = lat;
+        }
+        if (address && document.getElementById("addressInput"))
+          document.getElementById("addressInput").value = address;
+        if (civic && document.getElementById("civicInput"))
+          document.getElementById("civicInput").value = civic;
+        if (city && document.getElementById("cityInput"))
+          document.getElementById("cityInput").value = city;
+        if (name && document.getElementById("nameInput"))
+          document.getElementById("nameInput").value = name;
+        if (type && document.getElementById("structureType"))
+          document.getElementById("structureType").value = type;
+        if (closeDay && document.getElementById("closingDay"))
+          document.getElementById("closingDay").value = closeDay;
+      })();
+      // attach save handler
+      document.addEventListener("DOMContentLoaded", () => {
+        const saveBtn = document.getElementById("saveBtn");
+        saveBtn.addEventListener("click", () => {
+          // hide any previous error background
+          const note = document.getElementById("notification");
+          if (note) note.style.background = "#4caf50";
+
+          // helper to read lat/lon from either div or input
+          function readCoord(id) {
+            const el = document.getElementById(id);
+            if (!el) return "";
+            if (el.tagName === "INPUT") return el.value.trim();
+            return el.textContent.trim();
+          }
+
+          let lat = readCoord("latBox");
+          let lon = readCoord("lonBox");
+          const address = document.getElementById("addressInput").value.trim();
+          const name = document.getElementById("nameInput").value.trim();
+          const type = document.getElementById("structureType").value;
+          const civic = document.getElementById("civicInput").value.trim();
+          const city = document.getElementById("cityInput").value.trim();
+          const closingDay = document.getElementById("closingDay").value;
+          // simple validation
+          if (!name) {
+            showNotification("Inserisci il nome", true);
+            return;
+          }
+          if (!type) {
+            showNotification("Seleziona il tipo di struttura", true);
+            return;
+          }
+
+          // if coords missing or cleared, perform forward geocode first
+          if (
+            !lat ||
+            lat === "NON MODIFICABILE" ||
+            !lon ||
+            lon === "NON MODIFICABILE"
+          ) {
+            const q = [name, address, civic, city].filter((s) => s).join(" ");
+            if (!q) {
+              showNotification(
+                "Inserisci almeno un indirizzo per ottenere le coordinate",
+                true
+              );
+              return;
+            }
+            fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`
+            )
+              .then((r) => r.json())
+              .then((results) => {
+                if (results && results.length) {
+                  lat = results[0].lat;
+                  lon = results[0].lon;
+                  // update UI
+                  const lonBox = document.getElementById("lonBox");
+                  const latBox = document.getElementById("latBox");
+                  if (lonBox && latBox) {
+                    lonBox.textContent = lon;
+                    latBox.textContent = lat;
+                  }
+                  // restore save button text
+                  const saveBtn2 = document.getElementById("saveBtn");
+                  if (saveBtn2) {
+                    // swap back to save icon and label
+                    const icon = saveBtn2.querySelector(
+                      "span.material-symbols-outlined"
+                    );
+                    const label = saveBtn2.querySelector(
+                      "span:not(.material-symbols-outlined)"
+                    );
+                    if (icon) {
+                      icon.textContent = "save";
+                      icon.style.color = "#007bff";
                     }
-                    userDiv.innerHTML = html;
+                    if (label) label.textContent = "Salva";
+                  }
+                  if (note)
+                    showNotification(
+                      "Coordinate aggiornate, premi di nuovo SALVA",
+                      false
+                    );
                 } else {
-                    if (sessionStorage.getItem('bypassLogin')) {
-                        sessionStorage.removeItem('bypassLogin');
-                    } else {
-                        window.location = '/';
-                    }
+                  showNotification(
+                    "Impossibile trovare le coordinate con i dati forniti",
+                    true
+                  );
                 }
-            })
-            .catch(err => {
-                console.error('error fetching session', err);
-            });
+              })
+              .catch((err) => {
+                console.error("geocode error", err);
+                showNotification(
+                  "Errore durante la ricerca delle coordinate",
+                  true
+                );
+              });
+            return; // stop here; user will click salva again
+          }
 
-        function showNotification(msg, error) {
-            const note = document.getElementById('notification');
-            if (!note) return alert(msg);
-            note.textContent = msg;
-            note.style.background = error ? '#f44336' : '#4caf50';
-            note.style.display = 'block';
-            setTimeout(()=>{ note.style.display='none'; }, 2000);
-        }
-        // helper to append a photo thumbnail/pseudo-grid item
-        function appendPhotoToGallery(obj) {
-            const idVal = (obj && obj.id) ? obj.id : null;
-            // ensure we only use valid URLs; ignore blank/malformed values
-            let urlVal = null;
-            if (obj && typeof obj === 'object') {
-                if (typeof obj.url === 'string') urlVal = obj.url;
-            } else if (typeof obj === 'string') {
-                urlVal = obj;
-            }
-            if (!urlVal || typeof urlVal !== 'string') return;
-            urlVal = urlVal.trim();
-            if (!urlVal) return;
-            // only allow typical URL/data URI patterns
-            if (!(urlVal.startsWith('http') || urlVal.startsWith('data:'))) return;
-
-            const galleryContainer = document.getElementById('galleryContainer');
-            if (!galleryContainer) return;
-            const wrapper = document.createElement('div');
-            wrapper.className = 'photo-item';
-            wrapper.style.position = 'relative';
-            wrapper.style.width = '100%';
-
-            const img = document.createElement('img');
-            img.src = urlVal;
-            img.style.width = '100%';
-            img.style.height = 'auto';
-            img.style.objectFit = 'cover';
-            img.style.border = '1px solid #ccc';
-            wrapper.appendChild(img);
-
-            if (idVal) {
-                const btn = document.createElement('span');
-                btn.textContent = '✖';
-                btn.style.position = 'absolute';
-                btn.style.top = '2px';
-                btn.style.right = '4px';
-                btn.style.cursor = 'pointer';
-                btn.style.background = 'rgba(255,255,255,0.7)';
-                btn.style.borderRadius = '50%';
-                btn.style.padding = '2px 4px';
-                btn.title = 'Rimuovi immagine';
-                btn.addEventListener('click', () => {
-                    showPhotoConfirm(() => {
-                        apiFetch('/api/delete-photo', {
-                            method: 'POST',
-                            headers:{'Content-Type':'application/json'},
-                            body: JSON.stringify({photo_id: idVal})
-                        }).then(r=>r.json()).then(resp=>{
-                            if (resp.success) {
-                                wrapper.remove();
-                                showNotification('Foto eliminata', false);
-                            } else {
-                                showNotification('Errore cancellazione', true);
-                            }
-                        }).catch(e=>{
-                            console.error('delete-photo error',e);
-                            showNotification('Errore di rete', true);
-                        });
-                    });
-                });
-                wrapper.appendChild(btn);
-            }
-
-            galleryContainer.appendChild(wrapper);
-        }
-
-        // fill readonly coordinates if provided via query string and support edit mode
-        (function(){
-            const params = new URLSearchParams(window.location.search);
-            // support both short and long parameter names for coordinates
-            const lat = params.get('lat') || params.get('latitude');
-            const lon = params.get('lon') || params.get('longitude');
-            const address = params.get('address');
-            const civic = params.get('civic');
-            const city = params.get('city');
-            const name = params.get('name');
-            const type = params.get('type');
-            const closeDay = params.get('closingDay');
-            const id = params.get('id');
-
-            // store id on window for save handler
-            if (id) {
-                window.existingId = id;
-                // change heading
-                const h2 = document.querySelector('h2');
-                if (h2) h2.textContent = '✏️ Modifica locale';
-                // show delete button (keep flex display)
-                const del = document.getElementById('deleteBtn');
-                if (del) {
-                    del.style.visibility = 'visible';
-                    del.style.display = 'flex';
-                }
-
-                // load gallery images
-                const galleryCard = document.getElementById('galleryCard');
-                const galleryContainer = document.getElementById('galleryContainer');
-                console.log('insert page edit mode, id=', id, 'galleryCard=', galleryCard, 'galleryContainer=', galleryContainer);
-                if (galleryCard && galleryContainer) {
-                    // always show the gallery card, will fill if there are URLs
-                    galleryCard.style.display = 'block';
-                    const loader = document.createElement('div');
-                    loader.id = 'galleryLoading';
-                    loader.textContent = 'Caricamento immagini…';
-                    loader.style.padding = '8px';
-                    loader.style.fontStyle = 'italic';
-                    galleryContainer.appendChild(loader);
-
-                    apiFetch('/api/photos?locale_id='+encodeURIComponent(id))
-                        .then(r=>r.json())
-                        .then(urls=>{
-                            // remove loader
-                            if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
-                            if (Array.isArray(urls) && urls.length) {
-                                urls.forEach(u=> appendPhotoToGallery(u));
-                            }
-                        }).catch(e=>{
-                            console.error('failed loading gallery', e);
-                            if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
-                        });
-                }
-            }
-
-            if (lon !== null) {
-                const boxes = document.querySelectorAll('.input-box');
-                if (boxes[0]) boxes[0].textContent = lon;
-            }
-            if (lat !== null) {
-                const boxes = document.querySelectorAll('.input-box');
-                if (boxes[1]) boxes[1].textContent = lat;
-            }
-            if (address && document.getElementById('addressInput')) document.getElementById('addressInput').value = address;
-            if (civic && document.getElementById('civicInput')) document.getElementById('civicInput').value = civic;
-            if (city && document.getElementById('cityInput')) document.getElementById('cityInput').value = city;
-            if (name && document.getElementById('nameInput')) document.getElementById('nameInput').value = name;
-            if (type && document.getElementById('structureType')) document.getElementById('structureType').value = type;
-            if (closeDay && document.getElementById('closingDay')) document.getElementById('closingDay').value = closeDay;
-        })();
-        // attach save handler
-        document.addEventListener('DOMContentLoaded', () => {
-            const saveBtn = document.getElementById('saveBtn');
-            saveBtn.addEventListener('click', () => {
-                // hide any previous error background
-                const note = document.getElementById('notification');
-                if (note) note.style.background='#4caf50';
-
-                // helper to read lat/lon from either div or input
-                function readCoord(id) {
-                    const el = document.getElementById(id);
-                    if (!el) return '';
-                    if (el.tagName==='INPUT') return el.value.trim();
-                    return el.textContent.trim();
-                }
-
-                let lat = readCoord('latBox');
-                let lon = readCoord('lonBox');
-                const address = document.getElementById('addressInput').value.trim();
-                const name = document.getElementById('nameInput').value.trim();
-                const type = document.getElementById('structureType').value;
-                const civic = document.getElementById('civicInput').value.trim();
-                const city = document.getElementById('cityInput').value.trim();
-                const closingDay = document.getElementById('closingDay').value;
-                // simple validation
-                if (!name) { showNotification('Inserisci il nome', true); return; }
-                if (!type) { showNotification('Seleziona il tipo di struttura', true); return; }
-
-                // if coords missing or cleared, perform forward geocode first
-                if ((!lat || lat==='NON MODIFICABILE') || (!lon || lon==='NON MODIFICABILE')) {
-                    const q = [name, address, civic, city].filter(s=>s).join(' ');
-                    if (!q) { showNotification('Inserisci almeno un indirizzo per ottenere le coordinate', true); return; }
-                    fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`)
-                        .then(r=>r.json())
-                        .then(results=>{
-                            if (results && results.length) {
-                                lat = results[0].lat;
-                                lon = results[0].lon;
-                                // update UI
-                                const lonBox = document.getElementById('lonBox');
-                                const latBox = document.getElementById('latBox');
-                                if (lonBox && latBox) {
-                                    lonBox.textContent = lon;
-                                    latBox.textContent = lat;
-                                }
-                                // restore save button text
-                                const saveBtn2 = document.getElementById('saveBtn');
-                                if (saveBtn2) {
-                                    // swap back to save icon and label
-                                    const icon = saveBtn2.querySelector('span.material-symbols-outlined');
-                                    const label = saveBtn2.querySelector('span:not(.material-symbols-outlined)');
-                                    if (icon) {
-                                        icon.textContent = 'save';
-                                        icon.style.color = '#007bff';
-                                    }
-                                    if (label) label.textContent = 'Salva';
-                                }
-                                if (note) showNotification('Coordinate aggiornate, premi di nuovo SALVA', false);
-                            } else {
-                                showNotification('Impossibile trovare le coordinate con i dati forniti', true);
-                            }
-                        })
-                        .catch(err=>{
-                            console.error('geocode error',err);
-                            showNotification('Errore durante la ricerca delle coordinate', true);
-                        });
-                    return; // stop here; user will click salva again
-                }
-
-                // compose body
-                const body = {latitude:lat, longitude:lon,
-                        address, name, type, civic, city, closingDay};
-                if (window.existingId) {
-                    body.id = window.existingId;
-                }
-                // send request
-                apiFetch('/api/save-location', {
-                    method: 'POST',
-                    headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify(body)
-                }).then(r=>r.json()).then(resp=>{
-                    if(resp.success){
-                        // store the returned id and update URL so page is now "edit mode"
-                        if(!window.existingId) {
-                            // just-created a new locale
-                            window.existingId = resp.id;
-                            const newUrl = new URL(window.location.href);
-                            newUrl.searchParams.set('id', resp.id);
-                            history.replaceState(null, '', newUrl.toString());
-                            // show gallery card so user can upload
-                            const galleryCard = document.getElementById('galleryCard');
-                            const galleryContainer = document.getElementById('galleryContainer');
-                            if (galleryCard && galleryContainer) {
-                                galleryCard.style.display = 'block';
-                                galleryContainer.innerHTML = '';
-                                apiFetch('/api/photos?locale_id=' + encodeURIComponent(resp.id))
-                                    .then(r=>r.json())
-                                    .then(urls=>{
-                                        if (Array.isArray(urls) && urls.length) {
-                                            urls.forEach(u=>{
-                                                const img = document.createElement('img');
-                                                img.src = u;
-                                                img.style.maxWidth = '120px';
-                                                img.style.maxHeight = '120px';
-                                                img.style.objectFit = 'cover';
-                                                img.style.border = '1px solid #ccc';
-                                                galleryContainer.appendChild(img);
-                                            });
-                                        }
-                                    })
-                                    .catch(e=>console.error('failed loading gallery', e));
-                            }
-                        }
-                        const note = document.getElementById('notification');
-                        note.textContent = window.existingId ? 'Locale aggiornato con successo' : 'Locale salvato con successo';
-                        note.style.display = 'block';
-                        // do not redirect automatically any more; user can upload photos now
-                        sessionStorage.setItem('bypassLogin','1');
-                        // (optional) if you still want to return to list, you can click "Annulla" or navigate manually
-                    } else {
-                        const note = document.getElementById('notification');
-                        note.textContent = 'Errore salvataggio: '+(resp.error||'');
-                        note.style.background = '#f44336';
-                        note.style.display = 'block';
-                    }
-                }).catch(err=>{
-                    console.error(err);
-                    const note = document.getElementById('notification');
-                    if(note){
-                        note.textContent = 'Errore di rete';
-                        note.style.background = '#f44336';
-                        note.style.display = 'block';
-                    } else {
-                        showNotification('Errore di rete', true);
-                    }
-                });
-            });
-            const deleteBtn = document.getElementById('deleteBtn');
-            deleteBtn.addEventListener('click', () => {
-                if (!window.existingId) return;
-                // show custom confirmation dialog
-                const dlg = document.getElementById('confirmDialog');
-                if (!dlg) return;
-                dlg.style.display = 'flex';
-            });
-            const cancelBtn = document.getElementById('cancelBtn');
-            cancelBtn.addEventListener('click', () => {
-                sessionStorage.setItem('bypassLogin','1');
-                window.location = '/default/default.html';
-            });
-            
-            // allow clearing coordinates: simply empty the readonly boxes
-            const clearBtn = document.getElementById('clearCoordsBtn');
-            if (clearBtn) {
-                // hide on edit mode because coords already set
-                if (window.existingId) {
-                    clearBtn.style.display = 'none';
-                }
-                clearBtn.addEventListener('click', () => {
-                    // clear coordinate display boxes
-                    ['lonBox','latBox'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (!el) return;
-                        el.textContent = '';
-                    });
-                    // clear all input fields so user can start fresh
-                    const inputs = ['nameInput','addressInput','civicInput','cityInput'];
-                    inputs.forEach(id=>{
-                        const el = document.getElementById(id);
-                        if (el) el.value = '';
-                    });
-                    const typeSel = document.getElementById('structureType');
-                    if (typeSel) typeSel.value = '';
-                    const closeSel = document.getElementById('closingDay');
-                    if (closeSel) closeSel.value = '';
-                    // update button text
-                    const saveBtn = document.getElementById('saveBtn');
-                    if (saveBtn) {
-                        const icon = saveBtn.querySelector('span.material-symbols-outlined');
-                        const label = saveBtn.querySelector('span:not(.material-symbols-outlined)');
-                        if (icon) {
-                            icon.textContent = 'search';
-                            icon.style.color = '#007bff';
-                        }
-                        if (label) label.textContent = 'Trova';
-                    }
-                });
-            }
-            
-            // upload photo handler
-            const uploadBtn = document.getElementById('uploadBtn');
-
-            uploadBtn.addEventListener('click', () => {
+          // compose body
+          const body = {
+            latitude: lat,
+            longitude: lon,
+            address,
+            name,
+            type,
+            civic,
+            city,
+            closingDay
+          };
+          if (window.existingId) {
+            body.id = window.existingId;
+          }
+          // send request
+          apiFetch("/api/save-location", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+          })
+            .then((r) => r.json())
+            .then((resp) => {
+              if (resp.success) {
+                // store the returned id and update URL so page is now "edit mode"
                 if (!window.existingId) {
-                    showNotification('Salva prima il locale, poi carica la foto', true);
-                    return;
+                  // just-created a new locale
+                  window.existingId = resp.id;
+                  const newUrl = new URL(window.location.href);
+                  newUrl.searchParams.set("id", resp.id);
+                  history.replaceState(null, "", newUrl.toString());
+                  // show gallery card so user can upload
+                  const galleryCard = document.getElementById("galleryCard");
+                  const galleryContainer =
+                    document.getElementById("galleryContainer");
+                  if (galleryCard && galleryContainer) {
+                    galleryCard.style.display = "block";
+                    galleryContainer.innerHTML = "";
+                    apiFetch(
+                      "/api/photos?locale_id=" + encodeURIComponent(resp.id)
+                    )
+                      .then((r) => r.json())
+                      .then((urls) => {
+                        if (Array.isArray(urls) && urls.length) {
+                          urls.forEach((u) => {
+                            const img = document.createElement("img");
+                            img.src = u;
+                            img.style.maxWidth = "120px";
+                            img.style.maxHeight = "120px";
+                            img.style.objectFit = "cover";
+                            img.style.border = "1px solid #ccc";
+                            galleryContainer.appendChild(img);
+                          });
+                        }
+                      })
+                      .catch((e) => console.error("failed loading gallery", e));
+                  }
                 }
-                // check how many photos already exist for this locale
-                apiFetch('/api/photos?locale_id=' + encodeURIComponent(window.existingId))
-                    .then(r => r.json())
-                    .then(arr => {
-                        let count = Array.isArray(arr) ? arr.length : 0;
-                        if (count >= 6) {
-                            showNotification('Hai già 6 immagini, non puoi aggiungerne altre.', true);
-                            return;
-                        }
-                        document.getElementById('photoInput').click();
-                    })
-                    .catch(err => {
-                        console.error('errore conteggio foto', err);
-                        // on failure allow entry
-                        document.getElementById('photoInput').click();
-                    });
+                const note = document.getElementById("notification");
+                note.textContent = window.existingId
+                  ? "Locale aggiornato con successo"
+                  : "Locale salvato con successo";
+                note.style.display = "block";
+                // do not redirect automatically any more; user can upload photos now
+                sessionStorage.setItem("bypassLogin", "1");
+                // (optional) if you still want to return to list, you can click "Annulla" or navigate manually
+              } else {
+                const note = document.getElementById("notification");
+                note.textContent = "Errore salvataggio: " + (resp.error || "");
+                note.style.background = "#f44336";
+                note.style.display = "block";
+              }
+            })
+            .catch((err) => {
+              console.error(err);
+              const note = document.getElementById("notification");
+              if (note) {
+                note.textContent = "Errore di rete";
+                note.style.background = "#f44336";
+                note.style.display = "block";
+              } else {
+                showNotification("Errore di rete", true);
+              }
             });
-
-            const photoInput = document.createElement('input');
-            photoInput.type = 'file';
-            photoInput.accept = 'image/*';
-            photoInput.style.display = 'none';
-            photoInput.id = 'photoInput';
-            document.body.appendChild(photoInput);
-            photoInput.addEventListener('change', () => {
-                const file = photoInput.files[0];
-                if (!file) return;
-                // build form data to send raw file
-                const form = new FormData();
-                form.append('locale_id', window.existingId);
-                form.append('photo', file, file.name);
-
-                // create progress bar elements
-                const progressContainer = document.getElementById('uploadProgress');
-                const progressBar = document.getElementById('uploadProgressBar');
-                if (progressContainer && progressBar) {
-                    progressBar.style.width = '0%';
-                    progressContainer.style.display = 'block';
-                }
-
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', '/upload-photo');
-                xhr.upload.onprogress = (evt) => {
-                    if (evt.lengthComputable) {
-                        const pct = Math.round(evt.loaded / evt.total * 100);
-                        if (progressBar) progressBar.style.width = pct + '%';
-                        if (pct === 100) {
-                            // show interim notice while server processes the file
-                            const note = document.getElementById('notification');
-                            if (note) {
-                                note.style.background = '#1976d2';
-                                note.textContent = 'Caricamento completato, attendere elaborazione...';
-                                note.style.display = 'block';
-                            }
-                        }
-                    }
-                };
-                xhr.onload = () => {
-                    if (progressContainer) progressContainer.style.display = 'none';
-                    try {
-                        const resp = JSON.parse(xhr.responseText);
-                        const note = document.getElementById('notification');
-                        if (resp.success) {
-                            // show success
-                            note.style.background = '#4caf50';
-                            note.textContent = 'Immagine caricata con successo';
-                            note.style.display = 'block';
-                            setTimeout(()=>{ note.style.display='none'; }, 2000);
-                            // update gallery: if we have an id we can append directly; otherwise re-fetch everything
-                            const galleryCard = document.getElementById('galleryCard');
-                            const galleryContainer = document.getElementById('galleryContainer');
-                            if (galleryCard && galleryContainer) {
-                                galleryCard.style.display = 'block';
-                                if (resp.id) {
-                                    appendPhotoToGallery({ id: resp.id, url: resp.url });
-                                } else {
-                                    // fallback: rebuild gallery from server, ensures delete buttons are present
-                                    fetch('/photos?locale_id='+encodeURIComponent(window.existingId))
-                                        .then(r=>r.json())
-                                        .then(arr=>{
-                                            galleryContainer.innerHTML = '';
-                                            if (Array.isArray(arr) && arr.length) arr.forEach(appendPhotoToGallery);
-                                        }).catch(()=>{});
-                                }
-                            }
-                        } else {
-                            note.style.background = '#f44336';
-                            let msg = 'Errore upload: ' + (resp.error||'');
-                            if (resp.details) msg += ' ('+resp.details+')';
-                            note.textContent = msg;
-                            note.style.display = 'block';
-                        }
-                    } catch (e) {
-                        console.error('upload response not JSON', xhr.responseText);
-                        showNotification('Errore parsing risposta upload', true);
-                    }
-                };
-                xhr.onerror = () => {
-                    if (progressContainer) progressContainer.style.display = 'none';
-                    const note = document.getElementById('notification');
-                    if(note){
-                        note.textContent = 'Errore di rete durante upload';
-                        note.style.background = '#f44336';
-                        note.style.display = 'block';
-                    } else {
-                        showNotification('Errore di rete durante upload', true);
-                    }
-                };
-                xhr.send(form);
-            });
-            // dialog buttons handlers for locale deletion
-            const confirmYes = document.getElementById('confirmYes');
-            const confirmNo = document.getElementById('confirmNo');
-            if (confirmYes) {
-                confirmYes.addEventListener('click', () => {
-                    const dlg = document.getElementById('confirmDialog');
-                    if (dlg) dlg.style.display = 'none';
-                    // perform deletion
-                    apiFetch('/api/delete-location', {
-                        method:'POST',
-                        headers:{'Content-Type':'application/json'},
-                        body: JSON.stringify({id: window.existingId})
-                    }).then(r=>r.json()).then(resp=>{
-                        if(resp.success){
-                            showNotification('Locale eliminato', false);
-                            setTimeout(()=>{
-                                sessionStorage.setItem('bypassLogin','1');
-                                window.location='/default/default.html';
-                            },1500);
-                        } else {
-                            showNotification('Errore cancellazione', true);
-                        }
-                    }).catch(err=>{
-                        console.error(err);
-                        showNotification('Errore di rete', true);
-                    });
-                });
-            }
-            if (confirmNo) {
-                confirmNo.addEventListener('click', () => {
-                    const dlg = document.getElementById('confirmDialog');
-                    if (dlg) dlg.style.display = 'none';
-                });
-            }
-
         });
+        const deleteBtn = document.getElementById("deleteBtn");
+        deleteBtn.addEventListener("click", () => {
+          if (!window.existingId) return;
+          // show custom confirmation dialog
+          const dlg = document.getElementById("confirmDialog");
+          if (!dlg) return;
+          dlg.style.display = "flex";
+        });
+        const cancelBtn = document.getElementById("cancelBtn");
+        cancelBtn.addEventListener("click", () => {
+          sessionStorage.setItem("bypassLogin", "1");
+          window.location = "/default/default.html";
+        });
+
+        // allow clearing coordinates: simply empty the readonly boxes
+        const clearBtn = document.getElementById("clearCoordsBtn");
+        if (clearBtn) {
+          // hide on edit mode because coords already set
+          if (window.existingId) {
+            clearBtn.style.display = "none";
+          }
+          clearBtn.addEventListener("click", () => {
+            // clear coordinate display boxes
+            ["lonBox", "latBox"].forEach((id) => {
+              const el = document.getElementById(id);
+              if (!el) return;
+              el.textContent = "";
+            });
+            // clear all input fields so user can start fresh
+            const inputs = [
+              "nameInput",
+              "addressInput",
+              "civicInput",
+              "cityInput"
+            ];
+            inputs.forEach((id) => {
+              const el = document.getElementById(id);
+              if (el) el.value = "";
+            });
+            const typeSel = document.getElementById("structureType");
+            if (typeSel) typeSel.value = "";
+            const closeSel = document.getElementById("closingDay");
+            if (closeSel) closeSel.value = "";
+            // update button text
+            const saveBtn = document.getElementById("saveBtn");
+            if (saveBtn) {
+              const icon = saveBtn.querySelector(
+                "span.material-symbols-outlined"
+              );
+              const label = saveBtn.querySelector(
+                "span:not(.material-symbols-outlined)"
+              );
+              if (icon) {
+                icon.textContent = "search";
+                icon.style.color = "#007bff";
+              }
+              if (label) label.textContent = "Trova";
+            }
+          });
+        }
+
+        // upload photo handler
+        const uploadBtn = document.getElementById("uploadBtn");
+
+        uploadBtn.addEventListener("click", () => {
+          if (!window.existingId) {
+            showNotification("Salva prima il locale, poi carica la foto", true);
+            return;
+          }
+          // check how many photos already exist for this locale
+          apiFetch(
+            "/api/photos?locale_id=" + encodeURIComponent(window.existingId)
+          )
+            .then((r) => r.json())
+            .then((arr) => {
+              let count = Array.isArray(arr) ? arr.length : 0;
+              if (count >= 6) {
+                showNotification(
+                  "Hai già 6 immagini, non puoi aggiungerne altre.",
+                  true
+                );
+                return;
+              }
+              document.getElementById("photoInput").click();
+            })
+            .catch((err) => {
+              console.error("errore conteggio foto", err);
+              // on failure allow entry
+              document.getElementById("photoInput").click();
+            });
+        });
+
+        const photoInput = document.createElement("input");
+        photoInput.type = "file";
+        photoInput.accept = "image/*";
+        photoInput.style.display = "none";
+        photoInput.id = "photoInput";
+        document.body.appendChild(photoInput);
+        photoInput.addEventListener("change", () => {
+          const file = photoInput.files[0];
+          if (!file) return;
+          // build form data to send raw file
+          const form = new FormData();
+          form.append("locale_id", window.existingId);
+          form.append("photo", file, file.name);
+
+          // create progress bar elements
+          const progressContainer = document.getElementById("uploadProgress");
+          const progressBar = document.getElementById("uploadProgressBar");
+          if (progressContainer && progressBar) {
+            progressBar.style.width = "0%";
+            progressContainer.style.display = "block";
+          }
+
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", "/upload-photo");
+          xhr.upload.onprogress = (evt) => {
+            if (evt.lengthComputable) {
+              const pct = Math.round((evt.loaded / evt.total) * 100);
+              if (progressBar) progressBar.style.width = pct + "%";
+              if (pct === 100) {
+                // show interim notice while server processes the file
+                const note = document.getElementById("notification");
+                if (note) {
+                  note.style.background = "#1976d2";
+                  note.textContent =
+                    "Caricamento completato, attendere elaborazione...";
+                  note.style.display = "block";
+                }
+              }
+            }
+          };
+          xhr.onload = () => {
+            if (progressContainer) progressContainer.style.display = "none";
+            try {
+              const resp = JSON.parse(xhr.responseText);
+              const note = document.getElementById("notification");
+              if (resp.success) {
+                // show success
+                note.style.background = "#4caf50";
+                note.textContent = "Immagine caricata con successo";
+                note.style.display = "block";
+                setTimeout(() => {
+                  note.style.display = "none";
+                }, 2000);
+                // update gallery: if we have an id we can append directly; otherwise re-fetch everything
+                const galleryCard = document.getElementById("galleryCard");
+                const galleryContainer =
+                  document.getElementById("galleryContainer");
+                if (galleryCard && galleryContainer) {
+                  galleryCard.style.display = "block";
+                  if (resp.id) {
+                    appendPhotoToGallery({ id: resp.id, url: resp.url });
+                  } else {
+                    // fallback: rebuild gallery from server, ensures delete buttons are present
+                    fetch(
+                      "/photos?locale_id=" +
+                        encodeURIComponent(window.existingId)
+                    )
+                      .then((r) => r.json())
+                      .then((arr) => {
+                        galleryContainer.innerHTML = "";
+                        if (Array.isArray(arr) && arr.length)
+                          arr.forEach(appendPhotoToGallery);
+                      })
+                      .catch(() => {});
+                  }
+                }
+              } else {
+                note.style.background = "#f44336";
+                let msg = "Errore upload: " + (resp.error || "");
+                if (resp.details) msg += " (" + resp.details + ")";
+                note.textContent = msg;
+                note.style.display = "block";
+              }
+            } catch (e) {
+              console.error("upload response not JSON", xhr.responseText);
+              showNotification("Errore parsing risposta upload", true);
+            }
+          };
+          xhr.onerror = () => {
+            if (progressContainer) progressContainer.style.display = "none";
+            const note = document.getElementById("notification");
+            if (note) {
+              note.textContent = "Errore di rete durante upload";
+              note.style.background = "#f44336";
+              note.style.display = "block";
+            } else {
+              showNotification("Errore di rete durante upload", true);
+            }
+          };
+          xhr.send(form);
+        });
+        // dialog buttons handlers for locale deletion
+        const confirmYes = document.getElementById("confirmYes");
+        const confirmNo = document.getElementById("confirmNo");
+        if (confirmYes) {
+          confirmYes.addEventListener("click", () => {
+            const dlg = document.getElementById("confirmDialog");
+            if (dlg) dlg.style.display = "none";
+            // perform deletion
+            apiFetch("/api/delete-location", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: window.existingId })
+            })
+              .then((r) => r.json())
+              .then((resp) => {
+                if (resp.success) {
+                  showNotification("Locale eliminato", false);
+                  setTimeout(() => {
+                    sessionStorage.setItem("bypassLogin", "1");
+                    window.location = "/default/default.html";
+                  }, 1500);
+                } else {
+                  showNotification("Errore cancellazione", true);
+                }
+              })
+              .catch((err) => {
+                console.error(err);
+                showNotification("Errore di rete", true);
+              });
+          });
+        }
+        if (confirmNo) {
+          confirmNo.addEventListener("click", () => {
+            const dlg = document.getElementById("confirmDialog");
+            if (dlg) dlg.style.display = "none";
+          });
+        }
+      });
     </script>
     <script>
-        // Service Worker registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(reg => {
-                        console.log('✓ Service Worker registered', reg);
-                        reg.addEventListener('updatefound', () => {
-                            const newWorker = reg.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'activated') {
-                                    console.log('✓ New Service Worker activated');
-                                    if (window.confirm('Nuova versione disponibile! Ricaricare?')) {
-                                        window.location.reload();
-                                    }
-                                }
-                            });
-                        });
-                    })
-                    .catch(err => console.error('✗ SW registration failed:', err));
-            });
-        }
-        
-        function triggerSync() {
-            if ('serviceWorker' in navigator && 'SyncManager' in window) {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.sync.register('sync-queue')
-                        .then(() => console.log('✓ Background sync registered'))
-                        .catch(err => console.error('✗ Sync registration failed:', err));
+      // Service Worker registration
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js", { scope: "/" })
+            .then((reg) => {
+              console.log("✓ Service Worker registered", reg);
+              reg.addEventListener("updatefound", () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener("statechange", () => {
+                  if (newWorker.state === "activated") {
+                    console.log("✓ New Service Worker activated");
+                    if (
+                      window.confirm("Nuova versione disponibile! Ricaricare?")
+                    ) {
+                      window.location.reload();
+                    }
+                  }
                 });
-            }
-        }
-        
-        window.addEventListener('online', () => {
-            console.log('✓ Back online');
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.controller?.postMessage({ type: 'SYNC_NOW' });
-            }
-            triggerSync();
+              });
+            })
+            .catch((err) => console.error("✗ SW registration failed:", err));
         });
-        
-        window.addEventListener('offline', () => {
-            console.log('✗ Offline');
-        });
-        
-        if (navigator.onLine) {
-            triggerSync();
+      }
+
+      function triggerSync() {
+        if ("serviceWorker" in navigator && "SyncManager" in window) {
+          navigator.serviceWorker.ready.then((reg) => {
+            reg.sync
+              .register("sync-queue")
+              .then(() => console.log("✓ Background sync registered"))
+              .catch((err) =>
+                console.error("✗ Sync registration failed:", err)
+              );
+          });
         }
+      }
+
+      window.addEventListener("online", () => {
+        console.log("✓ Back online");
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.controller?.postMessage({ type: "SYNC_NOW" });
+        }
+        triggerSync();
+      });
+
+      window.addEventListener("offline", () => {
+        console.log("✗ Offline");
+      });
+
+      if (navigator.onLine) {
+        triggerSync();
+      }
     </script>
-</body>
+  </body>
+  <script>
+    // Ensure the latest service worker version is used and the page reloads when
+    // a new version is available (prevents stale cached JS/HTML causing repeated
+    // issues like loading "[object Object]" images).
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js", { scope: "/" })
+        .then((reg) => {
+          console.log("✓ Service Worker registered", reg);
+
+          const promptReload = () => {
+            if (window.confirm("Nuova versione disponibile. Ricaricare?")) {
+              window.location.reload();
+            }
+          };
+
+          if (reg.waiting) {
+            promptReload();
+          }
+
+          reg.addEventListener("updatefound", () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener("statechange", () => {
+              if (
+                newWorker.state === "installed" &&
+                navigator.serviceWorker.controller
+              ) {
+                promptReload();
+              }
+            });
+          });
+        })
+        .catch((err) => console.error("SW registration failed", err));
+
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        window.location.reload();
+      });
+    }
+  </script>
 </html>

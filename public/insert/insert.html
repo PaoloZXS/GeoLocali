@@ -524,7 +524,34 @@
       // helper to append a photo thumbnail/pseudo-grid item
       function appendPhotoToGallery(obj) {
         const idVal = obj && obj.id ? obj.id : null;
-        const urlVal = obj && obj.url ? obj.url : obj;
+        const urlVal =
+          obj && obj.url && typeof obj.url === "string"
+            ? obj.url
+            : typeof obj === "string"
+              ? obj
+              : null;
+
+        // protect against invalid values (e.g. objects) which would produce
+        // a src of "[object Object]" and trigger a 404 request such as
+        // "/insert/[object%20Object]".
+        if (!urlVal || typeof urlVal !== "string") {
+          console.warn("Skipping invalid photo value:", obj);
+          return;
+        }
+
+        const trimmedUrl = urlVal.trim();
+        if (!trimmedUrl) {
+          console.warn("Skipping empty photo URL", urlVal);
+          return;
+        }
+        // only allow typical URL/data URI patterns
+        if (
+          !(trimmedUrl.startsWith("http") || trimmedUrl.startsWith("data:"))
+        ) {
+          console.warn("Skipping non-URL photo value:", trimmedUrl);
+          return;
+        }
+
         const galleryContainer = document.getElementById("galleryContainer");
         if (!galleryContainer) return;
         const wrapper = document.createElement("div");
@@ -533,7 +560,7 @@
         wrapper.style.width = "100%";
 
         const img = document.createElement("img");
-        img.src = urlVal;
+        img.src = trimmedUrl;
         img.style.width = "100%";
         img.style.height = "auto";
         img.style.objectFit = "cover";
@@ -1098,6 +1125,45 @@
           });
         }
       });
+    </script>
+    <script>
+      // Ensure the latest service worker version is used and the page reloads when
+      // a new version is available (prevents stale cached JS/HTML causing repeated
+      // issues like loading "[object Object]" images).
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("/sw.js", { scope: "/" })
+          .then((reg) => {
+            console.log("✓ Service Worker registered", reg);
+
+            const promptReload = () => {
+              if (window.confirm("Nuova versione disponibile. Ricaricare?")) {
+                window.location.reload();
+              }
+            };
+
+            if (reg.waiting) {
+              promptReload();
+            }
+
+            reg.addEventListener("updatefound", () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener("statechange", () => {
+                if (
+                  newWorker.state === "installed" &&
+                  navigator.serviceWorker.controller
+                ) {
+                  promptReload();
+                }
+              });
+            });
+          })
+          .catch((err) => console.error("SW registration failed", err));
+
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          window.location.reload();
+        });
+      }
     </script>
   </body>
 </html>

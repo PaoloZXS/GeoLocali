@@ -56,5 +56,24 @@
             }).catch(err=>{console.error(err);showNotification('Errore di rete', true);});
         });
     </script>
+    <script type="module">
+        // Import offline support modules
+        import { initOfflineDetection } from '/offline.js';
+
+        // Initialize offline detection on load
+        window.addEventListener('load', () => {
+            initOfflineDetection();
+        });
+    </script>
+    <script>
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(reg => console.log('✓ Service Worker registered'))
+                    .catch(err => console.error('✗ SW registration failed:', err));
+            });
+        }
+    </script>
 </body>
 </html>

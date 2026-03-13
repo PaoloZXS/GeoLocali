@@ -128,9 +128,19 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // For JS modules (app code): Network-first so updates propagate immediately
+  if (isJsAsset(url.pathname)) {
+    event.respondWith(networkFirstStrategy(request));
+    return;
+  }
+
   // For static assets: Stale-while-revalidate (quick response + background update)
   event.respondWith(staleWhileRevalidateStrategy(request));
 });
+
+function isJsAsset(pathname) {
+  return pathname.endsWith(".js") || pathname.endsWith(".mjs");
+}
 
 // ===== CACHE STRATEGIES =====
 

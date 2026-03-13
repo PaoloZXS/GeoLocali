@@ -255,7 +255,19 @@
         // helper to append a photo thumbnail/pseudo-grid item
         function appendPhotoToGallery(obj) {
             const idVal = (obj && obj.id) ? obj.id : null;
-            const urlVal = (obj && obj.url) ? obj.url : obj;
+            // ensure we only use valid URLs; ignore blank/malformed values
+            let urlVal = null;
+            if (obj && typeof obj === 'object') {
+                if (typeof obj.url === 'string') urlVal = obj.url;
+            } else if (typeof obj === 'string') {
+                urlVal = obj;
+            }
+            if (!urlVal || typeof urlVal !== 'string') return;
+            urlVal = urlVal.trim();
+            if (!urlVal) return;
+            // only allow typical URL/data URI patterns
+            if (!(urlVal.startsWith('http') || urlVal.startsWith('data:'))) return;
+
             const galleryContainer = document.getElementById('galleryContainer');
             if (!galleryContainer) return;
             const wrapper = document.createElement('div');

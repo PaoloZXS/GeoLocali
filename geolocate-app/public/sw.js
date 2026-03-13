@@ -1,26 +1,8 @@
 // Service Worker v1.0 - Complete offline-first PWA
-const CACHE_NAME = "locali-v2";
-const API_CACHE_NAME = "locali-api-v2";
+// Note: We avoid caching HTML/JS permanently so updates are always fetched.
+const CACHE_NAME = "locali-v3";
+const API_CACHE_NAME = "locali-api-v3";
 const NETWORK_TIMEOUT = 5000; // 5 seconds
-
-// Assets to cache on install
-const STATIC_ASSETS = [
-  "/",
-  "/index.html",
-  "/default/default.html",
-  "/admin/admin.html",
-  "/insert/insert.html",
-  "/login/login.html",
-  "/register/register.html",
-  "/default/style.css",
-  "/admin/style.css",
-  "/insert/style.css",
-  "/login/style.css",
-  "/register/style.css",
-  "/manifest.json",
-  "/icons/icon-192x192.svg",
-  "/icons/icon-512x512.svg"
-];
 
 // External CDN resources (fonts, leaflet, etc)
 const EXTERNAL_ASSETS = [
@@ -46,18 +28,13 @@ const API_ENDPOINTS = [
 
 // ===== SERVICE WORKER LIFECYCLE =====
 
-// Install event - cache static assets
+// Install event - ensure new SW takes control quickly
 self.addEventListener("install", (event) => {
   console.log("[SW] Installing...");
   event.waitUntil(
     (async () => {
       try {
-        // Cache static assets
-        const staticCache = await caches.open(CACHE_NAME);
-        await staticCache.addAll(STATIC_ASSETS);
-        console.log("[SW] Static assets cached");
-
-        // Pre-cache external resources (don't fail if unavailable)
+        // Pre-cache external resources (fonts, CDN) for offline
         const apiCache = await caches.open(API_CACHE_NAME);
         EXTERNAL_ASSETS.forEach((url) => {
           fetch(url)
@@ -69,6 +46,7 @@ self.addEventListener("install", (event) => {
             .catch(() => console.log(`[SW] Could not cache ${url}`));
         });
 
+        // Activate immediately
         self.skipWaiting();
       } catch (error) {
         console.error("[SW] Install error:", error);
@@ -128,18 +106,53 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // For JS modules (app code): Network-first so updates propagate immediately
-  if (isJsAsset(url.pathname)) {
-    event.respondWith(networkFirstStrategy(request));
-    return;
-  }
-
-  // For static assets: Stale-while-revalidate (quick response + background update)
-  event.respondWith(staleWhileRevalidateStrategy(request));
+  // For all GET requests: network-first (fall back to cache if offline)
+  event.respondWith(networkFirstStrategy(request));
 });
 
-function isJsAsset(pathname) {
-  return pathname.endsWith(".js") || pathname.endsWith(".mjs");
+// ===== CACHE STRATEGIES =====
+
+async function networkFirstStrategy(request) {
+  try {
+    // Try network with timeout
+    const networkResponse = await fetchWithTimeout(request, NETWORK_TIMEOUT);
+
+    // Cache response for offline use
+    if (networkResponse.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+    }
+
+    return networkResponse;
+  } catch (error) {
+    // Fall back to cache
+    console.log("[SW] Network failed, using cache for:", request.url);
+    const cachedResponse = await caches.match(request);
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    // If no cache and offline, queue for sync (for API calls)
+    if (!navigator.onLine) {
+      console.log("[SW] Offline - queueing sync for:", request.url);
+      await queueForSync(request);
+    }
+
+    // Return offline fallback
+    return new Response(
+      JSON.stringify({
+        offline: true,
+        message: "Sei offline. Data verrà sincronizzato quando sei online.",
+        url: request.url
+      }),
+      {
+        status: 503,
+        statusText: "Service Unavailable",
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
 }
 
 // ===== CACHE STRATEGIES =====
@@ -185,47 +198,6 @@ async function networkFirstStrategy(request) {
       }
     );
   }
-}
-
-async function cacheFirstStrategy(request) {
-  try {
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-
-    // If not in cache, try network
-    const networkResponse = await fetchWithTimeout(request, NETWORK_TIMEOUT);
-    if (networkResponse.ok) {
-      const cache = await caches.open(API_CACHE_NAME);
-      cache.put(request, networkResponse.clone());
-    }
-
-    return networkResponse;
-  } catch (error) {
-    console.log("[SW] Cache-first failed for:", request.url);
-    return new Response("Risorsa non disponibile offline", { status: 503 });
-  }
-}
-
-async function staleWhileRevalidateStrategy(request) {
-  const cache = await caches.open(CACHE_NAME);
-  const cachedResponse = await cache.match(request);
-
-  const fetchPromise = fetchWithTimeout(request, NETWORK_TIMEOUT)
-    .then((networkResponse) => {
-      if (networkResponse.ok) {
-        cache.put(request, networkResponse.clone());
-      }
-      return networkResponse;
-    })
-    .catch(() => {
-      console.log("[SW] Background refresh failed for:", request.url);
-      return cachedResponse || new Response("Offline", { status: 503 });
-    });
-
-  // Return cached response immediately, then update in background
-  return cachedResponse || fetchPromise;
 }
 
 async function handleNonGetRequest(request) {

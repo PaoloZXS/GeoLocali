@@ -1132,35 +1132,9 @@
       });
     </script>
     <script type="module">
-      // Load modules robustly (supports both /offline.js and /public/offline.js paths)
-      async function importWithFallback(primary, fallback) {
-        const tryLoad = async (path) => {
-          try {
-            const res = await fetch(path, {
-              method: "HEAD",
-              cache: "no-store"
-            });
-            if (res.ok) return await import(path);
-          } catch (e) {
-            // ignore
-          }
-          return null;
-        };
-
-        const mod = (await tryLoad(primary)) || (await tryLoad(fallback));
-        if (!mod)
-          throw new Error(`Unable to load module: ${primary} or ${fallback}`);
-        return mod;
-      }
-
-      const OfflineModule = await importWithFallback(
-        "/public/offline.js",
-        "/offline.js"
-      );
-      const ApiWrapperModule = await importWithFallback(
-        "/public/api-wrapper.js",
-        "/api-wrapper.js"
-      );
+      // Load modules using relative paths so they work in production (served under /public)
+      import * as OfflineModule from "../offline.js";
+      import * as ApiWrapperModule from "../api-wrapper.js";
 
       const Offline = OfflineModule.default || OfflineModule;
       const ApiWrapper = ApiWrapperModule.default || ApiWrapperModule;

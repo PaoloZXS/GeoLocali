@@ -67,7 +67,7 @@
         GEO-Locali
         <a
           id="addLink"
-          href="/insert/insert.html"
+          href="../insert/insert.html"
           style="color: inherit; text-decoration: none"
         >
           <span
@@ -397,15 +397,15 @@
                           const city = addr.city || addr.town || addr.village;
                           if (city) params.set("city", city);
                           window.location =
-                            "/insert/insert.html?" + params.toString();
+                            "../insert/insert.html?" + params.toString();
                         })
                         .catch(() => {
-                          window.location = `/insert/insert.html?lat=${lat2}&lon=${lon2}`;
+                          window.location = `../insert/insert.html?lat=${lat2}&lon=${lon2}`;
                         });
                     },
                     (err) => {
                       // fallback to existing coords
-                      window.location = `/insert/insert.html?lat=${latitude}&lon=${longitude}`;
+                      window.location = `../insert/insert.html?lat=${latitude}&lon=${longitude}`;
                     },
                     { enableHighAccuracy: true }
                   );
@@ -701,7 +701,7 @@
           // also provide shorter aliases for coordinates so the insert page can fill its readonly boxes
           if (loc.latitude != null) params.set("lat", loc.latitude);
           if (loc.longitude != null) params.set("lon", loc.longitude);
-          editLink.href = "/insert/insert.html?" + params.toString();
+          editLink.href = "../insert/insert.html?" + params.toString();
           // open in same tab to avoid accumulating windows
           editLink.rel = "noopener noreferrer";
           const editSpan = document.createElement("span");
@@ -824,35 +824,9 @@
       }
     </script>
     <script type="module">
-      // Load modules robustly (supports both /offline.js and /public/offline.js paths)
-      async function importWithFallback(primary, fallback) {
-        const tryLoad = async (path) => {
-          try {
-            const res = await fetch(path, {
-              method: "HEAD",
-              cache: "no-store"
-            });
-            if (res.ok) return await import(path);
-          } catch (e) {
-            // ignore
-          }
-          return null;
-        };
-
-        const mod = (await tryLoad(primary)) || (await tryLoad(fallback));
-        if (!mod)
-          throw new Error(`Unable to load module: ${primary} or ${fallback}`);
-        return mod;
-      }
-
-      const OfflineModule = await importWithFallback(
-        "/public/offline.js",
-        "/offline.js"
-      );
-      const ApiWrapperModule = await importWithFallback(
-        "/public/api-wrapper.js",
-        "/api-wrapper.js"
-      );
+      // Load modules using relative paths so they work in production (served under /public)
+      import * as OfflineModule from "../offline.js";
+      import * as ApiWrapperModule from "../api-wrapper.js";
 
       const Offline = OfflineModule.default || OfflineModule;
       const ApiWrapper = ApiWrapperModule.default || ApiWrapperModule;

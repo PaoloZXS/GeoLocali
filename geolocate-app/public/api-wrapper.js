@@ -1,10 +1,10 @@
 // api-wrapper.js - API call wrapper with offline support and caching
-import db from "/db.js";
+import db from "./db.js";
 import {
   getOnlineStatus,
   apiFetchWithOfflineSupport,
   updatePendingSyncBadge
-} from "/offline.js";
+} from "./offline.js";
 
 const API_WRAPPER_VERSION = "2026-03-13";
 console.log("[api-wrapper.js] version", API_WRAPPER_VERSION);

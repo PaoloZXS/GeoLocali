@@ -355,12 +355,12 @@
       }
 
       const OfflineModule = await importWithFallback(
-        "/offline.js",
-        "/public/offline.js"
+        "/public/offline.js",
+        "/offline.js"
       );
       const ApiWrapperModule = await importWithFallback(
-        "/api-wrapper.js",
-        "/public/api-wrapper.js"
+        "/public/api-wrapper.js",
+        "/api-wrapper.js"
       );
 
       const Offline = OfflineModule.default || OfflineModule;

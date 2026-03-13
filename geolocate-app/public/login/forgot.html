@@ -114,8 +114,8 @@
       }
 
       const OfflineModule = await importWithFallback(
-        "/offline.js",
-        "/public/offline.js"
+        "/public/offline.js",
+        "/offline.js"
       );
       const Offline = OfflineModule.default || OfflineModule;
       const { initOfflineDetection } = Offline;

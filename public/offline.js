@@ -1,5 +1,5 @@
 // offline.js - Offline detection and UI indicators
-import db from "/db.js";
+import db from "./db.js";
 
 const OFFLINE_JS_VERSION = "2026-03-13";
 console.log("[offline.js] version", OFFLINE_JS_VERSION);

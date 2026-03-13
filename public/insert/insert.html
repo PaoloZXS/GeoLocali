@@ -1126,6 +1126,20 @@
         }
       });
     </script>
+    <script type="module">
+      // Import offline support modules
+      import {
+        initOfflineDetection,
+        updatePendingSyncBadge
+      } from "/offline.js";
+      import { api } from "/api-wrapper.js";
+
+      // Initialize offline detection on load
+      window.addEventListener("load", () => {
+        initOfflineDetection();
+        updatePendingSyncBadge();
+      });
+    </script>
     <script>
       // Ensure the latest service worker version is used and the page reloads when
       // a new version is available (prevents stale cached JS/HTML causing repeated

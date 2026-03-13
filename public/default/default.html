@@ -823,5 +823,19 @@
           });
       }
     </script>
+    <script type="module">
+      // Import offline support modules
+      import {
+        initOfflineDetection,
+        updatePendingSyncBadge
+      } from "/offline.js";
+      import { api } from "/api-wrapper.js";
+
+      // Initialize offline detection on load
+      window.addEventListener("load", () => {
+        initOfflineDetection();
+        updatePendingSyncBadge();
+      });
+    </script>
   </body>
 </html>

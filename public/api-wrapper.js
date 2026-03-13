@@ -1,0 +1,415 @@
+// api-wrapper.js - API call wrapper with offline support and caching
+import db from './db.js';
+import { getOnlineStatus, apiFetchWithOfflineSupport, updatePendingSyncBadge } from './offline.js';
+
+const API_CACHE_DURATION = 3600000; // 1 hour
+
+/**
+ * Wrapper around fetch with automatic offline queue and cache
+ */
+export async function apiFetch(url, options = {}) {
+  const {
+    method = 'GET',
+    headers = {},
+    body = null,
+    timeout = 10000,
+    cacheResponse = true,
+  } = options;
+
+  const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
+  const isOnline = getOnlineStatus();
+
+  // Prepare request options
+  const requestOptions = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers,
+    },
+    ...options,
+  };
+
+  // Add auth token
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    requestOptions.headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  if (body) {
+    requestOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
+  }
+
+  try {
+    // For GET requests, try network with timeout
+    if (method === 'GET') {
+      const response = await fetchWithTimeout(fullUrl, requestOptions, timeout);
+
+      if (response.ok && cacheResponse) {
+        // Cache successful response
+        try {
+          const cloned = response.clone();
+          const cache = await caches.open('locali-api-cache');
+          cache.put(fullUrl, cloned);
+        } catch (e) {
+          console.warn('[API] Could not cache response:', e);
+        }
+      }
+
+      return response;
+    }
+
+    // For mutations (POST, PUT, DELETE)
+    if (isOnline) {
+      // Try to send immediately if online
+      try {
+        const response = await fetchWithTimeout(fullUrl, requestOptions, timeout);
+        return response;
+      } catch (error) {
+        console.warn('[API] Mutation failed, queueing for sync:', error.message);
+
+        // Queue for later sync
+        await queueMutation(fullUrl, requestOptions);
+        updatePendingSyncBadge();
+
+        return new Response(
+          JSON.stringify({
+            offline: false,
+            queued: true,
+            message: 'La richiesta è stata accodata e verrà inviata tra poco.',
+          }),
+          {
+            status: 202,
+            statusText: 'Accepted',
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    } else {
+      // Offline - queue immediately
+      await queueMutation(fullUrl, requestOptions);
+      updatePendingSyncBadge();
+
+      return new Response(
+        JSON.stringify({
+          offline: true,
+          queued: true,
+          message: 'Sei offline. La richiesta è stata messa in coda e verrà inviata quando sei online.',
+        }),
+        {
+          status: 202,
+          statusText: 'Accepted',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+  } catch (error) {
+    console.error('[API] Request error:', error);
+
+    // Try service worker cache for GET
+    if (method === 'GET') {
+      try {
+        const cached = await caches.match(fullUrl);
+        if (cached) {
+          console.log('[API] Using cached response for:', url);
+          return cached;
+        }
+      } catch (e) {
+        // Cache access failed
+      }
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Fetch with timeout
+ */
+function fetchWithTimeout(url, options, timeoutMs) {
+  return Promise.race([
+    fetch(url, options),
+    new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Request timeout after ${timeoutMs}ms`)),
+        timeoutMs
+      )
+    ),
+  ]);
+}
+
+/**
+ * Queue a mutation for later sync
+ */
+async function queueMutation(url, options) {
+  try {
+    const syncOp = {
+      url,
+      method: options.method || 'GET',
+      headers: options.headers || {},
+      body: options.body || null,
+      timestamp: Date.now(),
+    };
+
+    const opId = await db.addPendingSync(syncOp);
+    console.log('[API] Mutation queued with ID:', opId);
+    return opId;
+  } catch (error) {
+    console.error('[API] Could not queue mutation:', error);
+    throw error;
+  }
+}
+
+/**
+ * High-level API functions for common operations
+ */
+
+export const api = {
+  /**
+   * Get all locations
+   */
+  async getLocations() {
+    try {
+      const response = await apiFetch('/api/locations');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return response.json();
+    } catch (error) {
+      console.error('[API] getLocations error:', error);
+      // Return offline cache
+      if (!getOnlineStatus()) {
+        return db.getLocations(true); // Return synced locations only
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Create a new location
+   */
+  async createLocation(locationData) {
+    try {
+      const response = await apiFetch('/api/locations', {
+        method: 'POST',
+        body: locationData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      // Also save locally
+      if (result.id) {
+        await db.saveLocation({
+          id: result.id,
+          ...locationData,
+          synced: response.ok,
+        });
+      }
+
+      return result;
+    } catch (error) {
+      console.error('[API] createLocation error:', error);
+      // Save locally for later sync
+      await db.saveLocation({
+        ...locationData,
+        synced: false,
+        timestamp: Date.now(),
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Update a location
+   */
+  async updateLocation(id, locationData) {
+    try {
+      const response = await apiFetch(`/api/locations/${id}`, {
+        method: 'PUT',
+        body: locationData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      // Update locally
+      await db.saveLocation({
+        id,
+        ...locationData,
+        synced: true,
+      });
+
+      return response.json();
+    } catch (error) {
+      console.error('[API] updateLocation error:', error);
+      // Save locally for sync
+      await db.saveLocation({
+        id,
+        ...locationData,
+        synced: false,
+        timestamp: Date.now(),
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Get photos for a location
+   */
+  async getPhotos(localeId) {
+    try {
+      const response = await apiFetch(`/api/photos?locale_id=${localeId}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const photos = await response.json();
+
+      // Cache locally
+      for (const photo of photos) {
+        await db.savePhoto({
+          ...photo,
+          synced: true,
+        });
+      }
+
+      return photos;
+    } catch (error) {
+      console.error('[API] getPhotos error:', error);
+      // Return offline cache
+      if (!getOnlineStatus()) {
+        return db.getPhotosByLocale(localeId);
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Upload a photo
+   */
+  async uploadPhoto(localeId, file) {
+    try {
+      const formData = new FormData();
+      formData.append('locale_id', localeId);
+      formData.append('file', file);
+
+      const response = await apiFetch('/api/photos', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          // Don't set Content-Type for FormData
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      // Cache locally
+      await db.savePhoto({
+        id: result.id,
+        locale_id: localeId,
+        ...result,
+        synced: true,
+      });
+
+      return result;
+    } catch (error) {
+      console.error('[API] uploadPhoto error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete a photo
+   */
+  async deletePhoto(photoId, localeId) {
+    try {
+      const response = await apiFetch('/api/delete-photo', {
+        method: 'POST',
+        body: { photo_id: photoId },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      // Remove locally
+      await db.deletePhoto(photoId);
+
+      return response.json();
+    } catch (error) {
+      console.error('[API] deletePhoto error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get session info
+   */
+  async getSession() {
+    try {
+      const response = await apiFetch('/api/session');
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('[API] getSession error:', error);
+      return { loggedIn: false };
+    }
+  },
+
+  /**
+   * Login
+   */
+  async login(username, password) {
+    try {
+      const response = await apiFetch('/api/login', {
+        method: 'POST',
+        body: { username, password },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      // Store token
+      if (result.token) {
+        localStorage.setItem('authToken', result.token);
+      }
+
+      return result;
+    } catch (error) {
+      console.error('[API] login error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Logout
+   */
+  async logout() {
+    try {
+      localStorage.removeItem('authToken');
+      await db.clearAllData();
+      return { success: true };
+    } catch (error) {
+      console.error('[API] logout error:', error);
+      throw error;
+    }
+  },
+};
+
+export default apiFetch;

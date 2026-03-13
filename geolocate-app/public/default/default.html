@@ -337,44 +337,13 @@
       import {
         initOfflineDetection,
         updatePendingSyncBadge
-      } from "./offline.js";
-      import { api } from "./api-wrapper.js";
+      } from "/offline.js";
+      import { api } from "/api-wrapper.js";
 
       // Initialize offline detection on load
       window.addEventListener("load", () => {
         initOfflineDetection();
         updatePendingSyncBadge();
-      });
-    </script>
-    <script>
-      // global install prompt handler (fallback if not added earlier)
-      let deferredInstall;
-      window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault();
-        deferredInstall = e;
-        if (!document.getElementById("installBtn")) {
-          const btn = document.createElement("button");
-          btn.id = "installBtn";
-          btn.textContent = "Installa app";
-          btn.style.position = "fixed";
-          btn.style.bottom = "20px";
-          btn.style.right = "20px";
-          btn.style.padding = "10px 16px";
-          btn.style.background = "#007bff";
-          btn.style.color = "#fff";
-          btn.style.border = "none";
-          btn.style.borderRadius = "4px";
-          btn.style.zIndex = 10000;
-          btn.onclick = async () => {
-            if (!deferredInstall) return;
-            deferredInstall.prompt();
-            const choice = await deferredInstall.userChoice;
-            console.log("install choice", choice.outcome);
-            deferredInstall = null;
-            btn.remove();
-          };
-          document.body.appendChild(btn);
-        }
       });
     </script>
     <script>
@@ -872,11 +841,19 @@
                     const firstUrl = urls
                       .map((u) => {
                         if (typeof u === "string") return u;
-                        if (u && typeof u === "object" && typeof u.url === "string") return u.url;
+                        if (
+                          u &&
+                          typeof u === "object" &&
+                          typeof u.url === "string"
+                        )
+                          return u.url;
                         return null;
                       })
                       .map((u) => (u ? u.trim() : ""))
-                      .find((u) => u && (u.startsWith("http") || u.startsWith("data:")));
+                      .find(
+                        (u) =>
+                          u && (u.startsWith("http") || u.startsWith("data:"))
+                      );
                     if (firstUrl) {
                       html +=
                         `<div style="margin-top:6px;text-align:center;"><img src="${firstUrl}" ` +

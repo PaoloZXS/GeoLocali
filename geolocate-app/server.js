@@ -769,12 +769,10 @@ app.post(
         );
         const cnt = cntRes.rows && cntRes.rows[0] && cntRes.rows[0].cnt;
         if (cnt >= 6) {
-          return res
-            .status(400)
-            .json({
-              error: "Limite foto raggiunto",
-              details: "Non più di 6 immagini per locale"
-            });
+          return res.status(400).json({
+            error: "Limite foto raggiunto",
+            details: "Non più di 6 immagini per locale"
+          });
         }
       } catch (cErr) {
         console.warn("could not determine existing photo count", cErr);
@@ -1147,7 +1145,8 @@ app.post(["/delete-photo", "/api/delete-photo"], async (req, res) => {
 });
 
 // route to delete a location by id
-app.post("/delete-location", async (req, res) => {
+app.post(["/delete-location", "/api/delete-location"], async (req, res) => {
+  console.log("delete-location body:", req.body);
   const { id } = req.body;
   if (!id) {
     return res.status(400).json({ error: "id required" });

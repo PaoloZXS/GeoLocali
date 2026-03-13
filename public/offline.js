@@ -1,5 +1,5 @@
 // offline.js - Offline detection and UI indicators
-import db from "./db.js";
+import db from "/db.js";
 
 let isOnline = navigator.onLine;
 let syncInProgress = false;

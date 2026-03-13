@@ -1,12 +1,12 @@
 // offline.js - Offline detection and UI indicators
-import db from './db.js';
+import db from "/db.js";
 
 let isOnline = navigator.onLine;
 let syncInProgress = false;
 let pendingSyncCount = 0;
 
-const STATUS_ELEMENT_ID = 'offline-status-bar';
-const SYNC_INDICATOR_ID = 'sync-indicator';
+const STATUS_ELEMENT_ID = "offline-status-bar";
+const SYNC_INDICATOR_ID = "sync-indicator";
 
 /**
  * Initialize offline detection
@@ -16,23 +16,23 @@ export function initOfflineDetection() {
   updateOnlineStatus(navigator.onLine);
 
   // Listen to online/offline events
-  window.addEventListener('online', () => {
-    console.log('✓ Connection restored');
+  window.addEventListener("online", () => {
+    console.log("✓ Connection restored");
     updateOnlineStatus(true);
     triggerBackgroundSync();
   });
 
-  window.addEventListener('offline', () => {
-    console.log('✗ Connection lost');
+  window.addEventListener("offline", () => {
+    console.log("✗ Connection lost");
     updateOnlineStatus(false);
   });
 
   // Listen for Service Worker messages
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.controller?.addEventListener('message', (event) => {
-      if (event.data?.type === 'SYNC_IN_PROGRESS') {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.controller?.addEventListener("message", (event) => {
+      if (event.data?.type === "SYNC_IN_PROGRESS") {
         showSyncIndicator(true);
-      } else if (event.data?.type === 'SYNC_COMPLETE') {
+      } else if (event.data?.type === "SYNC_COMPLETE") {
         showSyncIndicator(false);
         updatePendingSyncBadge();
       }
@@ -42,7 +42,7 @@ export function initOfflineDetection() {
   // Update pending sync count on init
   updatePendingSyncBadge();
 
-  console.log('[Offline] Detection initialized, online:', isOnline);
+  console.log("[Offline] Detection initialized, online:", isOnline);
 }
 
 /**
@@ -53,15 +53,18 @@ function updateOnlineStatus(online) {
 
   if (online) {
     hideBanner();
-    showNotification('✓ Sei online', 'success');
+    showNotification("✓ Sei online", "success");
   } else {
     showBanner();
-    showNotification('✗ Sei offline - I dati verranno sincronizzati quando sei online', 'warning');
+    showNotification(
+      "✗ Sei offline - I dati verranno sincronizzati quando sei online",
+      "warning"
+    );
   }
 
   // Dispatch custom event for app-wide awareness
   window.dispatchEvent(
-    new CustomEvent('online-status-changed', { detail: { isOnline } })
+    new CustomEvent("online-status-changed", { detail: { isOnline } })
   );
 }
 
@@ -72,7 +75,7 @@ function showBanner() {
   let banner = document.getElementById(STATUS_ELEMENT_ID);
 
   if (!banner) {
-    banner = document.createElement('div');
+    banner = document.createElement("div");
     banner.id = STATUS_ELEMENT_ID;
     banner.style.cssText = `
       position: fixed;
@@ -99,12 +102,12 @@ function showBanner() {
     document.body.insertBefore(banner, document.body.firstChild);
   }
 
-  banner.style.display = 'flex';
+  banner.style.display = "flex";
 
   // Adjust body margin if header exists
-  const header = document.querySelector('.header');
+  const header = document.querySelector(".header");
   if (header) {
-    header.style.marginTop = '48px';
+    header.style.marginTop = "48px";
   }
 }
 
@@ -114,10 +117,10 @@ function showBanner() {
 function hideBanner() {
   const banner = document.getElementById(STATUS_ELEMENT_ID);
   if (banner) {
-    banner.style.display = 'none';
-    const header = document.querySelector('.header');
+    banner.style.display = "none";
+    const header = document.querySelector(".header");
     if (header) {
-      header.style.marginTop = '0';
+      header.style.marginTop = "0";
     }
   }
 }
@@ -129,7 +132,7 @@ function showSyncIndicator(show = true) {
   let indicator = document.getElementById(SYNC_INDICATOR_ID);
 
   if (!indicator) {
-    indicator = document.createElement('div');
+    indicator = document.createElement("div");
     indicator.id = SYNC_INDICATOR_ID;
     indicator.style.cssText = `
       position: fixed;
@@ -149,9 +152,9 @@ function showSyncIndicator(show = true) {
     `;
 
     // Add animation styles
-    if (!document.querySelector('style[data-sync-animation]')) {
-      const style = document.createElement('style');
-      style.setAttribute('data-sync-animation', 'true');
+    if (!document.querySelector("style[data-sync-animation]")) {
+      const style = document.createElement("style");
+      style.setAttribute("data-sync-animation", "true");
       style.textContent = `
         @keyframes slideIn {
           from {
@@ -182,21 +185,23 @@ function showSyncIndicator(show = true) {
   }
 
   if (show) {
-    indicator.style.display = 'flex';
+    indicator.style.display = "flex";
   } else {
-    indicator.style.display = 'none';
+    indicator.style.display = "none";
   }
 }
 
 /**
  * Show notification
  */
-function showNotification(message, type = 'info') {
-  let notificationContainer = document.getElementById('app-notification-container');
+function showNotification(message, type = "info") {
+  let notificationContainer = document.getElementById(
+    "app-notification-container"
+  );
 
   if (!notificationContainer) {
-    notificationContainer = document.createElement('div');
-    notificationContainer.id = 'app-notification-container';
+    notificationContainer = document.createElement("div");
+    notificationContainer.id = "app-notification-container";
     notificationContainer.style.cssText = `
       position: fixed;
       top: 60px;
@@ -207,13 +212,14 @@ function showNotification(message, type = 'info') {
     document.body.appendChild(notificationContainer);
   }
 
-  const notification = document.createElement('div');
-  const bgColor = {
-    success: '#4caf50',
-    warning: '#ff9800',
-    error: '#f44336',
-    info: '#2196F3',
-  }[type] || '#2196F3';
+  const notification = document.createElement("div");
+  const bgColor =
+    {
+      success: "#4caf50",
+      warning: "#ff9800",
+      error: "#f44336",
+      info: "#2196F3"
+    }[type] || "#2196F3";
 
   notification.style.cssText = `
     background: ${bgColor};
@@ -229,9 +235,9 @@ function showNotification(message, type = 'info') {
   notificationContainer.appendChild(notification);
 
   // Add fade animation if not exists
-  if (!document.querySelector('style[data-notification-animation]')) {
-    const style = document.createElement('style');
-    style.setAttribute('data-notification-animation', 'true');
+  if (!document.querySelector("style[data-notification-animation]")) {
+    const style = document.createElement("style");
+    style.setAttribute("data-notification-animation", "true");
     style.textContent = `
       @keyframes fadeInOut {
         0% { opacity: 0; }
@@ -255,13 +261,13 @@ export async function updatePendingSyncBadge() {
     const pendingOps = await db.getPendingSyncOps();
     pendingSyncCount = pendingOps.length;
 
-    const badge = document.getElementById('sync-badge');
+    const badge = document.getElementById("sync-badge");
     if (badge) {
       if (pendingSyncCount > 0) {
         badge.textContent = pendingSyncCount;
-        badge.style.display = 'inline-block';
+        badge.style.display = "inline-block";
       } else {
-        badge.style.display = 'none';
+        badge.style.display = "none";
       }
     }
 
@@ -270,7 +276,7 @@ export async function updatePendingSyncBadge() {
       console.log(`[Offline] ${pendingSyncCount} operations pending sync`);
     }
   } catch (error) {
-    console.error('[Offline] Error updating sync badge:', error);
+    console.error("[Offline] Error updating sync badge:", error);
   }
 }
 
@@ -279,7 +285,7 @@ export async function updatePendingSyncBadge() {
  */
 async function triggerBackgroundSync() {
   if (syncInProgress) {
-    console.log('[Offline] Sync already in progress');
+    console.log("[Offline] Sync already in progress");
     return;
   }
 
@@ -288,29 +294,34 @@ async function triggerBackgroundSync() {
 
   try {
     // If Service Worker supports Background Sync API
-    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    if ("serviceWorker" in navigator && "SyncManager" in window) {
       navigator.serviceWorker.ready.then((reg) => {
-        reg.sync.register('sync-queue')
-          .then(() => console.log('[Offline] Background sync registered'))
-          .catch((err) => console.warn('[Offline] Background sync not available:', err.message));
+        reg.sync
+          .register("sync-queue")
+          .then(() => console.log("[Offline] Background sync registered"))
+          .catch((err) =>
+            console.warn(
+              "[Offline] Background sync not available:",
+              err.message
+            )
+          );
       });
     }
 
     // Fallback: Manual sync via Service Worker message
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
       await new Promise((resolve) => {
         const messageChannel = new MessageChannel();
         messageChannel.port1.onmessage = (event) => {
-          if (event.data?.type === 'SYNC_RESULT') {
-            console.log('[Offline] Manual sync result:', event.data);
+          if (event.data?.type === "SYNC_RESULT") {
+            console.log("[Offline] Manual sync result:", event.data);
             resolve(event.data);
           }
         };
 
-        navigator.serviceWorker.controller.postMessage(
-          { type: 'SYNC_NOW' },
-          [messageChannel.port2]
-        );
+        navigator.serviceWorker.controller.postMessage({ type: "SYNC_NOW" }, [
+          messageChannel.port2
+        ]);
 
         // Timeout after 30 seconds
         setTimeout(resolve, 30000);
@@ -320,12 +331,12 @@ async function triggerBackgroundSync() {
     syncInProgress = false;
     showSyncIndicator(false);
     updatePendingSyncBadge();
-    showNotification('✓ Sincronizzazione completata', 'success');
+    showNotification("✓ Sincronizzazione completata", "success");
   } catch (error) {
-    console.error('[Offline] Sync error:', error);
+    console.error("[Offline] Sync error:", error);
     syncInProgress = false;
     showSyncIndicator(false);
-    showNotification('✗ Errore durante la sincronizzazione', 'error');
+    showNotification("✗ Errore durante la sincronizzazione", "error");
   }
 }
 
@@ -340,7 +351,7 @@ export function getOnlineStatus() {
  * Force sync (for manual testing)
  */
 export async function forceSyncNow() {
-  console.log('[Offline] Forcing sync...');
+  console.log("[Offline] Forcing sync...");
   await triggerBackgroundSync();
 }
 
@@ -356,15 +367,15 @@ export async function getSyncStats() {
       online: isOnline,
       syncInProgress,
       pendingSyncCount: pendingOps.length,
-      dbStats,
+      dbStats
     };
   } catch (error) {
-    console.error('[Offline] Error getting sync stats:', error);
+    console.error("[Offline] Error getting sync stats:", error);
     return {
       online: isOnline,
       syncInProgress,
       pendingSyncCount: 0,
-      error: error.message,
+      error: error.message
     };
   }
 }
@@ -373,7 +384,7 @@ export async function getSyncStats() {
  * Make API calls with offline fallback
  */
 export async function apiFetchWithOfflineSupport(url, options = {}) {
-  const { method = 'GET', body = null, fallbackToCache = true } = options;
+  const { method = "GET", body = null, fallbackToCache = true } = options;
 
   try {
     // Try network request
@@ -384,19 +395,19 @@ export async function apiFetchWithOfflineSupport(url, options = {}) {
       headers: {
         ...options.headers,
         // Add Authorization header from localStorage if available
-        ...(localStorage.getItem('authToken') && {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        }),
-      },
+        ...(localStorage.getItem("authToken") && {
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`
+        })
+      }
     });
 
     if (!response.ok && !isOnline) {
-      throw new Error('Network offline');
+      throw new Error("Network offline");
     }
 
     return response;
   } catch (error) {
-    console.log('[Offline] Network error:', error.message);
+    console.log("[Offline] Network error:", error.message);
 
     if (isOnline) {
       // We're online but request failed - this is a real error
@@ -404,13 +415,13 @@ export async function apiFetchWithOfflineSupport(url, options = {}) {
     }
 
     // We're offline - try cache or queue for sync
-    if (method !== 'GET') {
+    if (method !== "GET") {
       // Queue mutation for sync
       const syncOp = {
         url,
         method,
         body,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       };
 
       const opId = await db.addPendingSync(syncOp);
@@ -420,28 +431,28 @@ export async function apiFetchWithOfflineSupport(url, options = {}) {
         JSON.stringify({
           offline: true,
           queued: true,
-          message: 'Richiesta in coda. Verrà inviata quando sarai online.',
-          queueId: opId,
+          message: "Richiesta in coda. Verrà inviata quando sarai online.",
+          queueId: opId
         }),
         {
           status: 202,
-          statusText: 'Queued',
-          headers: { 'Content-Type': 'application/json' },
+          statusText: "Queued",
+          headers: { "Content-Type": "application/json" }
         }
       );
     }
 
     // Try service worker cache
-    if ('caches' in window && fallbackToCache) {
+    if ("caches" in window && fallbackToCache) {
       const cached = await caches.match(url);
       if (cached) {
-        console.log('[Offline] Using cached response for:', url);
+        console.log("[Offline] Using cached response for:", url);
         return cached;
       }
     }
 
     // No fallback available
-    throw new Error('Offline and no cached data available');
+    throw new Error("Offline and no cached data available");
   }
 }
 
@@ -451,5 +462,5 @@ export default {
   getOnlineStatus,
   forceSyncNow,
   getSyncStats,
-  apiFetchWithOfflineSupport,
+  apiFetchWithOfflineSupport
 };

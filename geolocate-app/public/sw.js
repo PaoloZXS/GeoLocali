@@ -1,6 +1,7 @@
 // Service Worker v1.0 - Complete offline-first PWA
 // Note: We avoid caching HTML/JS permanently so updates are always fetched.
-const CACHE_NAME = "locali-v3";
+// Bump this version to force clients to refresh cached files when deploying
+const CACHE_NAME = "locali-v4";
 const API_CACHE_NAME = "locali-api-v3";
 const NETWORK_TIMEOUT = 5000; // 5 seconds
 

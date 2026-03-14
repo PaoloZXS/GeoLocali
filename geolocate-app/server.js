@@ -762,7 +762,7 @@ app.post(["/save-location", "/api/save-location"], async (req, res) => {
 // endpoint to upload a photo for a locale
 // new multipart/form-data handler (replaces older JSON method)
 app.post(
-  "/upload-photo",
+  ["/upload-photo", "/api/upload-photo"],
   uploadMiddleware.single("photo"),
   async (req, res) => {
     try {
@@ -827,62 +827,6 @@ app.post(
     }
   }
 );
-
-console.log("Registering POST /upload-photo route");
-app.post(["/upload-photo", "/api/upload-photo"], async (req, res) => {
-  // expects locale_id, filename, and base64 data in JSON body
-  try {
-    const { locale_id: localeId, filename, data } = req.body;
-    if (!localeId || !filename || !data) {
-      return res
-        .status(400)
-        .json({ error: "locale_id, filename and data required" });
-    }
-    // strip data URL prefix if present
-    let base64 = data;
-    const m = data.match(/^data:\w+\/[-+.\w]+;base64,(.*)$/);
-    if (m) base64 = m[1];
-    let buffer = Buffer.from(base64, "base64");
-    console.log("upload-photo received image buffer length", buffer.length);
-
-    // if sharp is available, resize/compress the image to ~500KB before uploading
-    try {
-      const before = buffer.length;
-      buffer = await ensureMaxImageSize(buffer);
-      console.log("resize result: before=", before, "after=", buffer.length);
-    } catch (resizeErr) {
-      console.warn(
-        "image resize failed, continuing with original buffer:",
-        resizeErr.message
-      );
-    }
-
-    // only Dropbox is supported now; any failure is treated as error
-    let url;
-    try {
-      url = await uploadToDropbox(buffer, filename);
-    } catch (dbErr) {
-      // log full error stack for debugging
-      console.error("dropbox upload error", dbErr.stack || dbErr);
-      // include details in response so client can show them if needed
-      return res
-        .status(500)
-        .json({ error: "Dropbox upload failed", details: dbErr.message });
-    }
-    const dropboxPath = "/geoPhoto/" + filename;
-    const result = await db.execute(
-      "INSERT INTO tblocali_photos (locale_id, url, dropbox_path) VALUES (?, ?, ?)",
-      [localeId, url, dropboxPath]
-    );
-    const insertId = result.lastInsertRowid
-      ? String(result.lastInsertRowid)
-      : null;
-    return res.json({ success: true, url, id: insertId });
-  } catch (err) {
-    console.error("/upload-photo error", err);
-    return res.status(500).json({ error: err.message });
-  }
-});
 
 // simple check endpoint
 app.get("/ping", (req, res) => res.send("pong"));

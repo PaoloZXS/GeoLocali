@@ -112,6 +112,41 @@ self.addEventListener("fetch", (event) => {
 
 // ===== CACHE STRATEGIES =====
 
+async function cacheFirstStrategy(request) {
+  try {
+    // Try cache first
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    // If not in cache, try network
+    const networkResponse = await fetchWithTimeout(request, NETWORK_TIMEOUT);
+
+    // Cache successful response
+    if (networkResponse.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+    }
+
+    return networkResponse;
+  } catch (error) {
+    // Try cache as fallback
+    console.log("[SW] Network failed, using cache for:", request.url);
+    const cachedResponse = await caches.match(request);
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    // No cache available - return offline response
+    return new Response("Offline - resource not available", {
+      status: 503,
+      statusText: "Service Unavailable"
+    });
+  }
+}
+
 async function networkFirstStrategy(request) {
   try {
     // Try network with timeout
@@ -140,51 +175,6 @@ async function networkFirstStrategy(request) {
     }
 
     // Return offline fallback
-    return new Response(
-      JSON.stringify({
-        offline: true,
-        message: "Sei offline. Data verrà sincronizzato quando sei online.",
-        url: request.url
-      }),
-      {
-        status: 503,
-        statusText: "Service Unavailable",
-        headers: { "Content-Type": "application/json" }
-      }
-    );
-  }
-}
-
-// ===== CACHE STRATEGIES =====
-
-async function networkFirstStrategy(request) {
-  try {
-    // Try network with timeout
-    const networkResponse = await fetchWithTimeout(request, NETWORK_TIMEOUT);
-
-    // Cache successful API responses
-    if (networkResponse.ok) {
-      const cache = await caches.open(API_CACHE_NAME);
-      cache.put(request, networkResponse.clone());
-    }
-
-    return networkResponse;
-  } catch (error) {
-    // Fall back to cache
-    console.log("[SW] Network failed, using cache for:", request.url);
-    const cachedResponse = await caches.match(request);
-
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-
-    // If no cache and offline, queue for sync
-    if (!navigator.onLine) {
-      console.log("[SW] Offline - queueing sync for:", request.url);
-      await queueForSync(request);
-    }
-
-    // Return offline response
     return new Response(
       JSON.stringify({
         offline: true,

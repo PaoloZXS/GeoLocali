@@ -1086,11 +1086,16 @@
                 showNotification("Errore: risposta vuota dal server", true);
                 return;
               }
-              
+
               const resp = JSON.parse(xhr.responseText);
               const note = document.getElementById("notification");
-              
-              if (resp.success && resp.id && resp.url && typeof resp.url === "string") {
+
+              if (
+                resp.success &&
+                resp.id &&
+                resp.url &&
+                typeof resp.url === "string"
+              ) {
                 // show success
                 note.style.background = "#4caf50";
                 note.textContent = "Immagine caricata con successo";
@@ -1111,7 +1116,7 @@
                 note.style.background = "#4caf50";
                 note.textContent = "Immagine caricata, caricamento galleria…";
                 note.style.display = "block";
-                
+
                 const galleryCard = document.getElementById("galleryCard");
                 const galleryContainer =
                   document.getElementById("galleryContainer");
@@ -1142,13 +1147,19 @@
               } else {
                 // Upload failed or invalid response
                 note.style.background = "#f44336";
-                let msg = "Errore upload: " + (resp.error || "Risposta non valida");
+                let msg =
+                  "Errore upload: " + (resp.error || "Risposta non valida");
                 if (resp.details) msg += " (" + resp.details + ")";
                 note.textContent = msg;
                 note.style.display = "block";
               }
             } catch (e) {
-              console.error("upload response parsing error", e, "responseText:", xhr.responseText);
+              console.error(
+                "upload response parsing error",
+                e,
+                "responseText:",
+                xhr.responseText
+              );
               showNotification("Errore parsing risposta upload", true);
             }
           };

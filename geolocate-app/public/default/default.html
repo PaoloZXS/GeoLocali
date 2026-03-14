@@ -368,7 +368,7 @@
             let html = `<span class="material-symbols-outlined" style="vertical-align:middle; font-size:1.2em; margin-right:4px;">man</span>${label}`;
             if (data.admin) {
               // fetch pending users count
-              apiFetch("/pending-users")
+              apiFetch("/api/pending-users")
                 .then((r) => r.json())
                 .then((pending) => {
                   const badge =
@@ -593,7 +593,7 @@
             // break into words to handle multi-term queries
             const words = q.split(/\s+/).filter(Boolean);
             // fetch all locations and filter by fuzzy match on name or city
-            apiFetch("/locations")
+            apiFetch("/api/locations")
               .then((r) => r.json())
               .then((locs) => {
                 const filtered = locs.filter((loc) => {
@@ -909,7 +909,7 @@
       }
 
       function updateNearbyList(currLat, currLon) {
-        apiFetch("/locations")
+        apiFetch("/api/locations")
           .then((r) => r.json())
           .then((locations) => renderTable(locations, currLat, currLon))
           .catch((err) => {

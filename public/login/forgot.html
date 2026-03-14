@@ -45,8 +45,8 @@
       "
     ></div>
     <script type="module">
-      // Load modules using relative paths so they work in production (served under /public)
-      import * as OfflineModule from "../offline.js";
+      // Load modules using the public path (works in production)
+      import * as OfflineModule from "/public/offline.js";
       const Offline = OfflineModule.default || OfflineModule;
       const { initOfflineDetection } = Offline;
 

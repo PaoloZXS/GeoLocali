@@ -75,6 +75,17 @@ app.use((req, res, next) => {
 // parse urlencoded bodies so we can handle form POSTs
 app.use(express.urlencoded({ extended: true }));
 
+// If an incoming request is prefixed with /public/, rewrite it to match
+// the static assets directory. This lets pages reference assets via
+// /public/... (as some older HTML templates do) while still serving from
+// the same public folder.
+app.use((req, res, next) => {
+  if (req.path.startsWith("/public/")) {
+    req.url = req.url.replace(/^\/public/, "");
+  }
+  next();
+});
+
 // serve static assets (CSS, JS, images, etc.) from the public folder
 // this ensures requests like "/login/style.css" return the actual file
 // instead of falling through to a 404 HTML response, which triggers the
@@ -1197,7 +1208,8 @@ app.post(["/delete-location", "/api/delete-location"], async (req, res) => {
 });
 
 // route that returns all saved locations (send every column present in the table)
-app.get("/locations", async (req, res) => {
+// support both /locations and /api/locations (clients may use either)
+app.get(["/locations", "/api/locations"], async (req, res) => {
   try {
     // using SELECT * makes the endpoint resilient to schema changes
     const result = await db.execute("SELECT * FROM tblocali");
@@ -1205,6 +1217,95 @@ app.get("/locations", async (req, res) => {
   } catch (err) {
     console.error("/locations error", err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// allow CRUD on locations via /api/locations for compatibility with the API wrapper
+app.post(["/locations", "/api/locations"], async (req, res) => {
+  // this duplicates /save-location behavior but makes /api/locations usable
+  let {
+    id,
+    latitude,
+    longitude,
+    address,
+    name,
+    type,
+    civic,
+    city,
+    closingDay
+  } = req.body;
+  if (latitude == null || longitude == null) {
+    return res.status(400).json({ error: "latitude and longitude required" });
+  }
+  latitude = parseFloat(latitude);
+  longitude = parseFloat(longitude);
+
+  try {
+    if (id !== undefined && id !== null && id !== "") {
+      // update existing record
+      await db.execute(
+        "UPDATE tblocali SET latitude = ?, longitude = ?, address = ?, name = ?, type = ?, civic = ?, city = ?, closingDay = ? WHERE id = ?",
+        [
+          latitude,
+          longitude,
+          address || null,
+          name || null,
+          type || null,
+          civic || null,
+          city || null,
+          closingDay || null,
+          id
+        ]
+      );
+      return res.json({ success: true, id });
+    }
+
+    // check for an existing identical record (by coords or address)
+    const existing = await db.execute(
+      "SELECT id FROM tblocali WHERE (latitude = ? AND longitude = ?) OR (address = ?)",
+      [latitude, longitude, address || ""]
+    );
+    if (existing.rows.length) {
+      const existingId = String(existing.rows[0].id);
+      return res.json({ success: true, id: existingId, duplicate: true });
+    }
+
+    const result = await db.execute(
+      "INSERT INTO tblocali (latitude, longitude, address, name, type, civic, city, closingDay) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        latitude,
+        longitude,
+        address || null,
+        name || null,
+        type || null,
+        civic || null,
+        city || null,
+        closingDay || null
+      ]
+    );
+    const newId = String(result.lastInsertRowid);
+    return res.json({ success: true, id: newId });
+  } catch (err) {
+    console.error("/api/locations error", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// update a location by id (used by the API wrapper for PUT /api/locations/:id)
+app.put(["/locations/:id", "/api/locations/:id"], async (req, res) => {
+  const localeId = req.params.id;
+  const updateData = req.body;
+  try {
+    const setClause = Object.keys(updateData)
+      .map((key) => `${key} = ?`)
+      .join(", ");
+    const values = [...Object.values(updateData), localeId];
+
+    await db.execute(`UPDATE tblocali SET ${setClause} WHERE id = ?`, values);
+    res.json({ success: true });
+  } catch (e) {
+    console.error("/api/locations/:id error", e);
+    res.status(500).json({ error: e.message });
   }
 });
 

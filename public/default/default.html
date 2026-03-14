@@ -824,9 +824,9 @@
       }
     </script>
     <script type="module">
-      // Load modules using relative paths so they work in production (served under /public)
-      import * as OfflineModule from "../offline.js";
-      import * as ApiWrapperModule from "../api-wrapper.js";
+      // Load modules using the public path (works on Vercel)
+      import * as OfflineModule from "/public/offline.js";
+      import * as ApiWrapperModule from "/public/api-wrapper.js";
 
       const Offline = OfflineModule.default || OfflineModule;
       const ApiWrapper = ApiWrapperModule.default || ApiWrapperModule;

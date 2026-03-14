@@ -1034,9 +1034,16 @@
           xhr.onload = () => {
             if (progressContainer) progressContainer.style.display = "none";
             try {
+              // Verify we got a valid JSON response
+              if (!xhr.responseText) {
+                showNotification("Errore: risposta vuota dal server", true);
+                return;
+              }
+              
               const resp = JSON.parse(xhr.responseText);
               const note = document.getElementById("notification");
-              if (resp.success) {
+              
+              if (resp.success && resp.id && resp.url && typeof resp.url === "string") {
                 // show success
                 note.style.background = "#4caf50";
                 note.textContent = "Immagine caricata con successo";
@@ -1044,38 +1051,57 @@
                 setTimeout(() => {
                   note.style.display = "none";
                 }, 2000);
-                // update gallery: if we have an id we can append directly; otherwise re-fetch everything
+                // update gallery: append directly since we have valid data
                 const galleryCard = document.getElementById("galleryCard");
                 const galleryContainer =
                   document.getElementById("galleryContainer");
                 if (galleryCard && galleryContainer) {
                   galleryCard.style.display = "block";
-                  if (resp.id) {
-                    appendPhotoToGallery({ id: resp.id, url: resp.url });
-                  } else {
-                    // fallback: rebuild gallery from server, ensures delete buttons are present
-                    fetch(
-                      "/api/photos?locale_id=" +
-                        encodeURIComponent(window.existingId)
-                    )
-                      .then((r) => r.json())
-                      .then((arr) => {
-                        galleryContainer.innerHTML = "";
-                        if (Array.isArray(arr) && arr.length)
-                          arr.forEach(appendPhotoToGallery);
-                      })
-                      .catch(() => {});
-                  }
+                  appendPhotoToGallery({ id: resp.id, url: resp.url });
+                }
+              } else if (resp.success && window.existingId) {
+                // Server response valid but missing url, refetch everything
+                note.style.background = "#4caf50";
+                note.textContent = "Immagine caricata, caricamento galleria…";
+                note.style.display = "block";
+                
+                const galleryCard = document.getElementById("galleryCard");
+                const galleryContainer =
+                  document.getElementById("galleryContainer");
+                if (galleryCard && galleryContainer) {
+                  galleryCard.style.display = "block";
+                  apiFetch(
+                    "/api/photos?locale_id=" +
+                      encodeURIComponent(window.existingId)
+                  )
+                    .then((r) => {
+                      if (!r.ok) {
+                        console.error("Photos fetch failed:", r.status);
+                        return [];
+                      }
+                      return r.json();
+                    })
+                    .then((arr) => {
+                      galleryContainer.innerHTML = "";
+                      if (Array.isArray(arr) && arr.length)
+                        arr.forEach(appendPhotoToGallery);
+                      note.style.display = "none";
+                    })
+                    .catch((e) => {
+                      console.error("Failed to reload gallery:", e);
+                      showNotification("Errore caricamento galleria", true);
+                    });
                 }
               } else {
+                // Upload failed or invalid response
                 note.style.background = "#f44336";
-                let msg = "Errore upload: " + (resp.error || "");
+                let msg = "Errore upload: " + (resp.error || "Risposta non valida");
                 if (resp.details) msg += " (" + resp.details + ")";
                 note.textContent = msg;
                 note.style.display = "block";
               }
             } catch (e) {
-              console.error("upload response not JSON", xhr.responseText);
+              console.error("upload response parsing error", e, "responseText:", xhr.responseText);
               showNotification("Errore parsing risposta upload", true);
             }
           };

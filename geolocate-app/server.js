@@ -829,7 +829,7 @@ app.post(
 );
 
 console.log("Registering POST /upload-photo route");
-app.post("/upload-photo", async (req, res) => {
+app.post(["/upload-photo", "/api/upload-photo"], async (req, res) => {
   // expects locale_id, filename, and base64 data in JSON body
   try {
     const { locale_id: localeId, filename, data } = req.body;

@@ -1061,7 +1061,7 @@
           }
 
           const xhr = new XMLHttpRequest();
-          xhr.open("POST", "/upload-photo");
+          xhr.open("POST", "/api/upload-photo");
           xhr.upload.onprogress = (evt) => {
             if (evt.lengthComputable) {
               const pct = Math.round((evt.loaded / evt.total) * 100);
@@ -1102,7 +1102,7 @@
                   } else {
                     // fallback: rebuild gallery from server, ensures delete buttons are present
                     fetch(
-                      "/photos?locale_id=" +
+                      "/api/photos?locale_id=" +
                         encodeURIComponent(window.existingId)
                     )
                       .then((r) => r.json())

@@ -913,7 +913,12 @@ app.get("/qr", (req, res) => {
             deferredPrompt.prompt();
             const choice = await deferredPrompt.userChoice;
             if (choice.outcome === 'accepted') {
-              setStatus('App installata! Puoi chiudere questa scheda.');
+              setStatus('App installata! Chiudo questa scheda...');
+              setTimeout(() => {
+                // Attempt to close the window/tab. If blocked, fall back to blank page.
+                window.close();
+                window.location.href = 'about:blank';
+              }, 800);
             } else {
               setStatus('Installazione annullata.');
             }

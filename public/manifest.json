@@ -1,8 +1,8 @@
 {
   "name": "Geo-Locali",
   "short_name": "GeoLocali",
-  "start_url": "/default/default.html",
-  "scope": "/default/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "fullscreen"],
   "background_color": "#ffffff",

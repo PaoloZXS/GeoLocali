@@ -924,9 +924,14 @@ app.get("/qr", (req, res) => {
             deferredPrompt.prompt();
             const choice = await deferredPrompt.userChoice;
             if (choice.outcome === 'accepted') {
-              setStatus('App installata! Chiudi questa finestra.');
+              setStatus('App installata! Chiudo questa scheda...');
               installBtn.style.display = 'none';
-              closeBtn.style.display = 'inline-block';
+              closeBtn.style.display = 'none';
+              // Try closing the window; if blocked, redirect to login so the user can close it safely.
+              window.close();
+              setTimeout(() => {
+                window.location.href = '/login/login.html';
+              }, 500);
             } else {
               setStatus('Installazione annullata.');
             }

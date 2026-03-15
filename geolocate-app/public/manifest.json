@@ -2,7 +2,7 @@
   "name": "Locali",
   "short_name": "Locali",
   "description": "Esplora e condividi i migliori locali intorno a te con geolocalizzazione e mappe interattive",
-  "start_url": "/",
+  "start_url": "/login/login.html",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "fullscreen"],

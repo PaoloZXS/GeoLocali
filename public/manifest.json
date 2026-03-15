@@ -1,7 +1,7 @@
 {
   "name": "Geo-Locali",
   "short_name": "GeoLocali",
-  "start_url": "/",
+  "start_url": "/login/login.html",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "fullscreen"],

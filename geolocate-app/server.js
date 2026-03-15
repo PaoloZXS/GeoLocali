@@ -876,6 +876,15 @@ app.get("/qr", (req, res) => {
         <div id="status">Verifica se l'installazione è disponibile...</div>
         ${instructions}
         <script>
+          // If the PWA is already running in standalone mode (installed), make sure
+          // it doesn't stay on the install helper page.
+          if (
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone
+          ) {
+            window.location.href = '/login/login.html';
+          }
+
           let deferredPrompt;
           const installBtn = document.getElementById('installBtn');
           const statusEl = document.getElementById('status');

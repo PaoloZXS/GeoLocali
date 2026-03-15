@@ -587,6 +587,12 @@
           note.style.display = "none";
         }, 2000);
       }
+      // helper to clear the gallery area when there are no images
+      function showGalleryPlaceholder() {
+        const galleryContainer = document.getElementById("galleryContainer");
+        if (!galleryContainer) return;
+        galleryContainer.innerHTML = "";
+      }
       // helper to append a photo thumbnail/pseudo-grid item
       function appendPhotoToGallery(obj) {
         const idVal = obj && obj.id ? obj.id : null;
@@ -623,6 +629,18 @@
 
         const img = document.createElement("img");
         img.src = trimmedUrl;
+        img.onerror = () => {
+          console.warn("Image failed to load:", trimmedUrl);
+          wrapper.remove();
+          // If no images remain, show a friendly placeholder instead of broken icons
+          const galleryContainer = document.getElementById("galleryContainer");
+          if (
+            galleryContainer &&
+            !galleryContainer.querySelector(".photo-item")
+          ) {
+            showGalleryPlaceholder();
+          }
+        };
         img.style.width = "100%";
         img.style.height = "auto";
         img.style.objectFit = "cover";
@@ -707,8 +725,10 @@
             galleryContainer
           );
           if (galleryCard && galleryContainer) {
-            // always show the gallery card, will fill if there are URLs
+            // show the gallery card even if empty, but display a friendly placeholder
             galleryCard.style.display = "block";
+            showGalleryPlaceholder();
+
             const loader = document.createElement("div");
             loader.id = "galleryLoading";
             loader.textContent = "Caricamento immagini…";
@@ -722,14 +742,24 @@
                 // remove loader
                 if (loader && loader.parentNode)
                   loader.parentNode.removeChild(loader);
+
                 if (Array.isArray(urls) && urls.length) {
-                  urls.forEach((u) => appendPhotoToGallery(u));
+                  const valid = urls.filter((u) => u && u.url);
+                  if (valid.length) {
+                    galleryContainer.innerHTML = "";
+                    valid.forEach((u) => appendPhotoToGallery(u));
+                  } else {
+                    showGalleryPlaceholder();
+                  }
+                } else {
+                  showGalleryPlaceholder();
                 }
               })
               .catch((e) => {
                 console.error("failed loading gallery", e);
                 if (loader && loader.parentNode)
                   loader.parentNode.removeChild(loader);
+                showGalleryPlaceholder();
               });
           }
         }
@@ -887,31 +917,48 @@
                   const newUrl = new URL(window.location.href);
                   newUrl.searchParams.set("id", resp.id);
                   history.replaceState(null, "", newUrl.toString());
+
+                  const isDuplicate = resp.duplicate;
+
                   // show gallery card so user can upload
                   const galleryCard = document.getElementById("galleryCard");
                   const galleryContainer =
                     document.getElementById("galleryContainer");
                   if (galleryCard && galleryContainer) {
-                    galleryCard.style.display = "block";
-                    galleryContainer.innerHTML = "";
-                    apiFetch(
-                      "/api/photos?locale_id=" + encodeURIComponent(resp.id)
-                    )
-                      .then((r) => r.json())
-                      .then((urls) => {
-                        if (Array.isArray(urls) && urls.length) {
-                          urls.forEach((u) => {
-                            const img = document.createElement("img");
-                            img.src = u;
-                            img.style.maxWidth = "120px";
-                            img.style.maxHeight = "120px";
-                            img.style.objectFit = "cover";
-                            img.style.border = "1px solid #ccc";
-                            galleryContainer.appendChild(img);
-                          });
-                        }
-                      })
-                      .catch((e) => console.error("failed loading gallery", e));
+                    if (isDuplicate) {
+                      // do not auto-populate with photos from the reused locale
+                      galleryCard.style.display = "none";
+                      showNotification(
+                        "Locale già presente: carica una foto per aggiungerla",
+                        false
+                      );
+                    } else {
+                      galleryCard.style.display = "block";
+                      showGalleryPlaceholder();
+                      apiFetch(
+                        "/api/photos?locale_id=" + encodeURIComponent(resp.id)
+                      )
+                        .then((r) => r.json())
+                        .then((urls) => {
+                          if (Array.isArray(urls) && urls.length) {
+                            const valid = urls.filter(
+                              (u) => u && (u.url || typeof u === "string")
+                            );
+                            if (valid.length) {
+                              galleryContainer.innerHTML = "";
+                              valid.forEach((u) => appendPhotoToGallery(u));
+                            } else {
+                              showGalleryPlaceholder();
+                            }
+                          } else {
+                            showGalleryPlaceholder();
+                          }
+                        })
+                        .catch((e) => {
+                          console.error("failed loading gallery", e);
+                          showGalleryPlaceholder();
+                        });
+                    }
                   }
                 }
                 const note = document.getElementById("notification");
@@ -926,6 +973,12 @@
                 }, 2000);
                 // do not redirect automatically any more; user can upload photos now
                 sessionStorage.setItem("bypassLogin", "1");
+                // Clear cached locations list so the default page fetches fresh data
+                if (window.caches) {
+                  caches
+                    .open("geolocali-v1")
+                    .then((c) => c.delete("/api/locations"));
+                }
                 // (optional) if you still want to return to list, you can click "Annulla" or navigate manually
               } else {
                 const note = document.getElementById("notification");
@@ -1109,6 +1162,7 @@
                   document.getElementById("galleryContainer");
                 if (galleryCard && galleryContainer) {
                   galleryCard.style.display = "block";
+                  galleryContainer.innerHTML = "";
                   appendPhotoToGallery({ id: resp.id, url: resp.url });
                 }
               } else if (resp.success && window.existingId) {

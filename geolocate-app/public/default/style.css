@@ -1,88 +1,96 @@
 body {
-    font-family: 'Rubik', sans-serif;
-    background: #ffffff;
-    color: #333;
-    margin: 0;
-    padding: 0;
+  font-family: "Rubik", sans-serif;
+  background: #ffffff;
+  color: #333;
+  margin: 0;
+  padding: 0;
 }
 
 .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    /* same navy used in login/register backgrounds */
-    background: #0a2342;
-    color: white;
-    padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* same navy used in login/register backgrounds */
+  background: #0a2342;
+  color: white;
+  padding: 10px 20px;
 }
 .header h1 {
-    margin: 0;
+  margin: 0;
 }
 #userInfo {
-    text-align: right;
-    color: white;            /* make the username white */
-    display: inline-flex;
-    align-items: center;     /* vertically center inside flex header */
-    height: 100%;
+  text-align: right;
+  color: white; /* make the username white */
+  display: inline-flex;
+  align-items: center; /* vertically center inside flex header */
+  height: 100%;
+}
+
+/* Hide helper debug text (display mode / SW status) so only user/admin appears */
+#pwaStatus {
+  display: none;
 }
 
 #yourMap {
-    width: 100%;
-    /* removed max-width so it expands fully */
-    height: 300px;
-    border: 1px solid #ccc;
+  width: 100%;
+  /* removed max-width so it expands fully */
+  height: 300px;
+  border: 1px solid #ccc;
 }
 
 /* heading for nearby locations uses same blue as header */
-.content h2 { color: #0b243f; }
+.content h2 {
+  color: #0b243f;
+}
 
 .content {
-    padding: 20px;
-    /* ensure bottom content isn't hidden behind fixed footer */
-    padding-bottom: 80px;
+  padding: 20px;
+  /* ensure bottom content isn't hidden behind fixed footer */
+  padding-bottom: 80px;
 }
 
 .footer {
-    background: #f1f1f1;
-    padding: 10px 20px;
-    text-align: center;
-    position: fixed;
-    width: 100%;
-    bottom: 0;
+  background: #f1f1f1;
+  padding: 10px 20px;
+  text-align: center;
+  position: fixed;
+  width: 100%;
+  bottom: 0;
 }
 
 /* responsive tweaks for phones */
 @media (max-width: 600px) {
-    .header {
-        /* keep row layout on phones, allow wrapping if necessary */
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-    .header h1 {
-        font-size: 1.4rem;
-        /* ensure h1 shrinks and does not force userInfo next line */
-        flex: 1 1 auto;
-        margin: 0;
-    }
-    /* reduce left margin on links to save space */
-    #addLink, #qrLink {
-        margin-left: 10px;
-    }
-    /* ensure the username block stays on right edge */
-    #userInfo {
-        margin-top: 0;
-        flex: 0 0 auto;
-    }
-    #searchInput {
-        width: 100%;
-        box-sizing: border-box;
-    }
-    #yourMap {
-        height: 200px;
-    }
-    .content {
-        padding: 10px;
-        padding-bottom: 60px;
-    }
+  .header {
+    /* keep row layout on phones, allow wrapping if necessary */
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .header h1 {
+    font-size: 1.4rem;
+    /* ensure h1 shrinks and does not force userInfo next line */
+    flex: 1 1 auto;
+    margin: 0;
+  }
+  /* reduce left margin on links to save space */
+  #addLink,
+  #qrLink {
+    margin-left: 10px;
+  }
+  /* ensure the username block stays on right edge */
+  #userInfo {
+    margin-top: 0;
+    flex: 0 0 auto;
+  }
+  #searchInput {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  #yourMap {
+    height: 200px;
+  }
+  .content {
+    padding: 10px;
+    padding-bottom: 60px;
+  }
 }

@@ -721,20 +721,6 @@ app.post(["/save-location", "/api/save-location"], async (req, res) => {
       return res.send(JSON.stringify(respObj));
     }
 
-    // check for an existing identical record (by coords or address)
-    const existing = await db.execute(
-      "SELECT id FROM tblocali WHERE (latitude = ? AND longitude = ?) OR (address = ?)",
-      [latitude, longitude, address || ""]
-    );
-    if (existing.rows.length) {
-      // return existing id instead of inserting duplicate
-      let existingId = String(existing.rows[0].id);
-      res.setHeader("Content-Type", "application/json");
-      return res.send(
-        JSON.stringify({ success: true, id: existingId, duplicate: true })
-      );
-    }
-
     const result = await db.execute(
       "INSERT INTO tblocali (latitude, longitude, address, name, type, civic, city, closingDay) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       [
@@ -834,10 +820,25 @@ app.get("/ping", (req, res) => res.send("pong"));
 // QR code generator page for easy PWA install
 // visitors can scan this from a phone to open the app URL
 app.get("/qr", (req, res) => {
-  const fullUrl = req.protocol + "://" + req.get("host") + "/";
+  // Prefer an explicit override (useful for local dev when you want a public URL)
+  // and automatically use the Vercel-provided URL when deployed.
+  const baseUrlOverride =
+    process.env.PWA_BASE_URL ||
+    // When deployed on Vercel, prefer the stable aliased domain (geolocate-app.vercel.app)
+    // rather than the auto-generated deployment URL (which may require login).
+    (process.env.VERCEL ? "https://geolocate-app.vercel.app" : null) ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
+  const fullUrl =
+    baseUrlOverride || req.protocol + "://" + req.get("host") + "/";
+
+  // When scanning the QR, we want the user to land directly on the install page,
+  // not on the login page. So we point the QR to /qr (the install helper page).
+  const installPageUrl = new URL("/qr", fullUrl).toString();
+
   const qrSrc =
     "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" +
-    encodeURIComponent(fullUrl);
+    encodeURIComponent(installPageUrl);
+
   // simple mobile install instructions vary by platform
   const instructions = `
     <p style="margin-top:20px;font-size:0.9em;color:#333;">
@@ -847,15 +848,73 @@ app.get("/qr", (req, res) => {
         <li>su iPhone/Safari: tocca <span style="font-weight:bold;">Condividi</span> e poi "Aggiungi a Home"</li>
       </ul>
     </p>`;
+
+  // The /qr page itself is a simple install helper page. It includes the manifest and
+  // service worker registration so the browser can show an install prompt without
+  // requiring the user to log in.
   res.send(`
     <!DOCTYPE html>
-    <html><head><title>QR PWA</title></head><body style="font-family:sans-serif;text-align:center;">
-    <h1>Scan to open PWA</h1>
-    <p>Apri questa pagina sul telefono e scansiona il codice:</p>
-    <img src="${qrSrc}" alt="QR code" />
-    <p><a href="${fullUrl}">${fullUrl}</a></p>
-    ${instructions}
-    </body></html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>PWA install</title>
+        <link rel="manifest" href="/manifest.json" />
+        <style>
+          body { font-family: sans-serif; text-align: center; padding: 20px; margin: 0; }
+          button { padding: 10px 18px; font-size: 16px; border-radius: 6px; border: 1px solid #444; background: #0a2342; color: white; cursor: pointer; }
+          button:disabled { opacity: 0.5; cursor: not-allowed; }
+          #status { margin-top: 16px; color: #444; font-size: 0.9em; }
+        </style>
+      </head>
+      <body>
+        <h1>Installazione PWA</h1>
+        <p>Scansiona questo QR oppure usa il link per installare l'app.</p>
+        <img src="${qrSrc}" alt="QR code" style="max-width:240px;" />
+        <p><a href="${fullUrl}">${fullUrl}</a></p>
+        <button id="installBtn" disabled>Installa app</button>
+        <div id="status">Verifica se l'installazione è disponibile...</div>
+        ${instructions}
+        <script>
+          let deferredPrompt;
+          const installBtn = document.getElementById('installBtn');
+          const statusEl = document.getElementById('status');
+
+          function setStatus(msg) {
+            statusEl.textContent = msg;
+          }
+
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+              .then(() => console.log('SW registered'))
+              .catch(() => console.warn('SW registration failed'));
+          }
+
+          window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.disabled = false;
+            setStatus('Installazione disponibile: premi Installa.');
+          });
+
+          installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+              setStatus('Installa usando il menu del browser (⋮).');
+              return;
+            }
+            deferredPrompt.prompt();
+            const choice = await deferredPrompt.userChoice;
+            if (choice.outcome === 'accepted') {
+              setStatus('App installata! Puoi chiudere questa scheda.');
+            } else {
+              setStatus('Installazione annullata.');
+            }
+            deferredPrompt = null;
+            installBtn.disabled = true;
+          });
+        </script>
+      </body>
+    </html>
   `);
 });
 
@@ -1202,16 +1261,6 @@ app.post(["/locations", "/api/locations"], async (req, res) => {
         ]
       );
       return res.json({ success: true, id });
-    }
-
-    // check for an existing identical record (by coords or address)
-    const existing = await db.execute(
-      "SELECT id FROM tblocali WHERE (latitude = ? AND longitude = ?) OR (address = ?)",
-      [latitude, longitude, address || ""]
-    );
-    if (existing.rows.length) {
-      const existingId = String(existing.rows[0].id);
-      return res.json({ success: true, id: existingId, duplicate: true });
     }
 
     const result = await db.execute(

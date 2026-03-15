@@ -1,8 +1,10 @@
 {
-  "name": "Geo-Locali Admin",
-  "short_name": "GeoAdmin",
-  "start_url": "/admin/admin.html",
+  "name": "Geo-Locali",
+  "short_name": "GeoLocali",
+  "start_url": "/default/default.html",
+  "scope": "/default/",
   "display": "standalone",
+  "display_override": ["standalone", "fullscreen"],
   "background_color": "#ffffff",
   "theme_color": "#0a2342",
   "icons": [

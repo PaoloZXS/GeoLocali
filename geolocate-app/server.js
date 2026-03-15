@@ -913,12 +913,14 @@ app.get("/qr", (req, res) => {
             deferredPrompt.prompt();
             const choice = await deferredPrompt.userChoice;
             if (choice.outcome === 'accepted') {
-              setStatus('App installata! Chiudo questa scheda...');
-              setTimeout(() => {
-                // Attempt to close the window/tab. If blocked, fall back to blank page.
-                window.close();
-                window.location.href = 'about:blank';
-              }, 800);
+              setStatus('App installata! Chiudi questa finestra.');
+              // Some browsers block window.close(); in a tab opened manually.
+              // Show a manual close instruction instead of redirecting to about:blank.
+              const closeBtn = document.createElement('button');
+              closeBtn.textContent = 'Chiudi questa finestra';
+              closeBtn.style.marginTop = '14px';
+              closeBtn.onclick = () => window.close();
+              statusEl.parentNode.insertBefore(closeBtn, statusEl.nextSibling);
             } else {
               setStatus('Installazione annullata.');
             }

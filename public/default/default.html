@@ -938,6 +938,10 @@
       // browser doesn't fire beforeinstallprompt (e.g. iOS/Safari).
       if (installBtn) {
         installBtn.style.display = "inline-flex";
+        installBtn.disabled = false;
+        installBtn.removeAttribute("disabled");
+        installBtn.style.cursor = "pointer";
+        installBtn.style.pointerEvents = "auto";
       }
 
       window.addEventListener("beforeinstallprompt", (e) => {

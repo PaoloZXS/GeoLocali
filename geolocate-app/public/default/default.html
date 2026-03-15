@@ -329,6 +329,14 @@
       const installBtn = document.getElementById("installBtn");
       const pwaStatus = document.getElementById("pwaStatus");
 
+      // Ensure the install button is always clickable (some browsers may disable it when install is not available)
+      if (installBtn) {
+        installBtn.disabled = false;
+        installBtn.removeAttribute("disabled");
+        installBtn.style.cursor = "pointer";
+        installBtn.style.pointerEvents = "auto";
+      }
+
       function setPwaStatus(text) {
         if (pwaStatus) pwaStatus.textContent = text;
         console.log("[PWA status]", text);

@@ -94,3 +94,9 @@ body {
     padding-bottom: 60px;
   }
 }
+
+/* Ensure install button is always clickable */
+#installBtn,
+#installBtn:disabled {
+  cursor: pointer !important;
+}

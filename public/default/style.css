@@ -57,3 +57,9 @@ body {
   width: 100%;
   bottom: 0;
 }
+
+/* Ensure install button is always clickable */
+#installBtn,
+#installBtn:disabled {
+  cursor: pointer !important;
+}

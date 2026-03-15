@@ -905,6 +905,17 @@ app.get("/qr", (req, res) => {
             setStatus('Installazione disponibile: premi Installa.');
           });
 
+          // Create a close button that only appears after install.
+          const closeBtn = document.createElement('button');
+          closeBtn.textContent = 'Chiudi questa finestra';
+          closeBtn.style.marginTop = '14px';
+          closeBtn.style.display = 'none';
+          closeBtn.onclick = () => {
+            window.close();
+            setStatus('Se non si chiude, chiudi manualmente questa scheda.');
+          };
+          statusEl.parentNode.insertBefore(closeBtn, statusEl.nextSibling);
+
           installBtn.addEventListener('click', async () => {
             if (!deferredPrompt) {
               setStatus('Installa usando il menu del browser (⋮).');
@@ -914,13 +925,8 @@ app.get("/qr", (req, res) => {
             const choice = await deferredPrompt.userChoice;
             if (choice.outcome === 'accepted') {
               setStatus('App installata! Chiudi questa finestra.');
-              // Some browsers block window.close(); in a tab opened manually.
-              // Show a manual close instruction instead of redirecting to about:blank.
-              const closeBtn = document.createElement('button');
-              closeBtn.textContent = 'Chiudi questa finestra';
-              closeBtn.style.marginTop = '14px';
-              closeBtn.onclick = () => window.close();
-              statusEl.parentNode.insertBefore(closeBtn, statusEl.nextSibling);
+              installBtn.style.display = 'none';
+              closeBtn.style.display = 'inline-block';
             } else {
               setStatus('Installazione annullata.');
             }

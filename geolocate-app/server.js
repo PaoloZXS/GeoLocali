@@ -872,7 +872,7 @@ app.get("/qr", (req, res) => {
         <p>Scansiona questo QR oppure usa il link per installare l'app.</p>
         <img src="${qrSrc}" alt="QR code" style="max-width:240px;" />
         <p><a href="${fullUrl}">${fullUrl}</a></p>
-        <button id="installBtn" disabled>Installa app</button>
+        <button id="installBtn">Installa app</button>
         <div id="status">Verifica se l'installazione è disponibile...</div>
         ${instructions}
         <script>
@@ -902,7 +902,6 @@ app.get("/qr", (req, res) => {
           window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            installBtn.disabled = false;
             setStatus('Installazione disponibile: premi Installa.');
           });
 
@@ -919,7 +918,6 @@ app.get("/qr", (req, res) => {
               setStatus('Installazione annullata.');
             }
             deferredPrompt = null;
-            installBtn.disabled = true;
           });
         </script>
       </body>

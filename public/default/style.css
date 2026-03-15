@@ -26,6 +26,11 @@ body {
   height: 100%;
 }
 
+/* Ensure header icons are consistent size */
+.header h1 .material-symbols-outlined {
+  font-size: 1.4em;
+}
+
 /* Ensure header icons are consistent in size */
 .header .material-symbols-outlined {
   font-size: 24px;

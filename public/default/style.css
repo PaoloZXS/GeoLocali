@@ -26,6 +26,11 @@ body {
   height: 100%;
 }
 
+/* Ensure header icons are consistent in size */
+.header .material-symbols-outlined {
+  font-size: 24px;
+}
+
 /* Hide helper debug text (display mode / SW status) so only user/admin appears */
 #pwaStatus {
   display: none;

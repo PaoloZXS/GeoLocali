@@ -47,6 +47,23 @@ const fs = require("fs");
 // parse JSON bodies (increase limit for image uploads)
 app.use(express.json({ limit: "50mb" }));
 
+// enable CORS for all origins (needed for file:// WebView and cross-origin fetches)
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, Accept"
+  );
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 // simple request logger for debugging
 app.use((req, res, next) => {
   const codes = req.path.split("").map((ch) => ch.charCodeAt(0));
@@ -183,6 +200,27 @@ function verifyTokenHeader(req) {
   } catch (e) {
     return null;
   }
+}
+
+// user helpers (Turso/LibSQL)
+const bcrypt = require("bcryptjs");
+
+async function findUserByUsername(username) {
+  const result = await db.execute(
+    "SELECT uid, username, password_hash, name, approved FROM user WHERE username = ?",
+    [username]
+  );
+  return result.rows && result.rows[0] ? result.rows[0] : null;
+}
+
+async function createUser({ name, username, password }) {
+  const password_hash = bcrypt.hashSync(password, 10);
+  const uid = `user_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  await db.execute(
+    "INSERT INTO user (uid, username, password_hash, name, approved) VALUES (?, ?, ?, ?, 1)",
+    [uid, username, password_hash, name]
+  );
+  return uid;
 }
 
 // initialize connection to remote DB
@@ -679,7 +717,24 @@ app.all(["/save-location", "/api/save-location"], (req, res, next) => {
 
 // route to save a location into tblocali
 app.post(["/save-location", "/api/save-location"], async (req, res) => {
-  console.log("save-location body:", req.body);
+  console.log(
+    "save-location body:",
+    req.body,
+    "content-type:",
+    req.headers["content-type"]
+  );
+
+  // supporto fallback B4A quando la request arriva come stringa non parsata
+  let bodyData = req.body;
+  if (typeof bodyData === "string" && bodyData.trim().length > 0) {
+    try {
+      bodyData = JSON.parse(bodyData);
+      console.log("save-location parsed body as JSON fallback", bodyData);
+    } catch (e) {
+      console.warn("save-location fallback parse failed", e.message);
+    }
+  }
+
   let {
     id,
     latitude,
@@ -690,7 +745,7 @@ app.post(["/save-location", "/api/save-location"], async (req, res) => {
     civic,
     city,
     closingDay
-  } = req.body;
+  } = bodyData || {};
   if (latitude == null || longitude == null) {
     return res.status(400).json({ error: "latitude and longitude required" });
   }
@@ -702,7 +757,7 @@ app.post(["/save-location", "/api/save-location"], async (req, res) => {
       console.log("update branch triggered, id:", id);
       // update existing record
       await db.execute(
-        "UPDATE tblocali SET latitude = ?, longitude = ?, address = ?, name = ?, type = ?, civic = ?, city = ?, closingDay = ? WHERE id = ?",
+        "UPDATE tblocali SET latitude = ?, longitude = ?, address = ?, name = ?, type = ?, civic = ?, city = ?, closing_day = ? WHERE id = ?",
         [
           latitude,
           longitude,
@@ -722,7 +777,7 @@ app.post(["/save-location", "/api/save-location"], async (req, res) => {
     }
 
     const result = await db.execute(
-      "INSERT INTO tblocali (latitude, longitude, address, name, type, civic, city, closingDay) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO tblocali (latitude, longitude, address, name, type, civic, city, closing_day) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       [
         latitude,
         longitude,
@@ -817,8 +872,71 @@ app.post(
 // simple check endpoint
 app.get("/ping", (req, res) => res.send("pong"));
 
+// registration endpoint: crea un nuovo utente (attesa approvazione admin)
+app.post("/api/register", async (req, res) => {
+  try {
+    const { name, username, password } = req.body;
+    if (!name || !username || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "Nome, email e password sono obbligatori"
+      });
+    }
+    const existing = await findUserByUsername(username);
+    if (existing) {
+      return res
+        .status(409)
+        .json({ success: false, error: "Utente già registrato" });
+    }
+    await createUser({ name, username, password });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("/api/register error", err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// login endpoint: controlla password e restituisce JWT
+app.post("/api/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Email e password sono obbligatori" });
+    }
+    const user = await findUserByUsername(username);
+    if (!user) {
+      return res
+        .status(401)
+        .json({ success: false, error: "Credenziali non valide" });
+    }
+    if (user.approved === 0 || user.approved === "0") {
+      return res
+        .status(403)
+        .json({ success: false, error: "Utente non approvato" });
+    }
+    const match = bcrypt.compareSync(password, user.password_hash);
+    if (!match) {
+      return res
+        .status(401)
+        .json({ success: false, error: "Credenziali non valide" });
+    }
+    const token = signToken(user.uid);
+    return res.json({
+      success: true,
+      token,
+      name: user.name,
+      username: user.username
+    });
+  } catch (err) {
+    console.error("/api/login error", err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // QR code generator page for easy PWA install
-// visitors can scan this from a phone to open the app URL
+// visitors can scan this from a phone to open the install helper
 app.get("/qr", (req, res) => {
   // Prefer an explicit override (useful for local dev when you want a public URL)
   // and automatically use the Vercel-provided URL when deployed.
